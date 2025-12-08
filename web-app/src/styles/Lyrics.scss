@@ -1,0 +1,101 @@
+.LyricsScrollContainer {
+    height: 100vh;
+    overflow-y: auto;
+    padding: 0 4rem 0 2rem;
+    /* Added right padding to prevent cutoff */
+    scrollbar-width: none;
+
+    /* Fade Effect */
+    mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+
+    /* Firefox */
+    &::-webkit-scrollbar {
+        display: none;
+        /* Chrome/Safari */
+    }
+}
+
+.Lyrics {
+    padding-top: 50vh;
+    padding-bottom: 50vh;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+
+    --vocal-idle-opacity: 0.5;
+    --vocal-active-opacity: 1;
+    --vocal-sung-opacity: 0.5;
+
+    --lyrics-size: 3rem;
+    /* Slightly larger as requested "beautiful lyrics style" */
+    font-weight: 700;
+    transition: all 0.5s ease;
+
+    /* Ensure text wraps and doesn't overflow */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+}
+
+.VocalsGroup {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    cursor: pointer;
+    transform-origin: left center;
+    /* Scale from left to avoid shifting */
+
+    &:hover {
+        opacity: 0.8;
+    }
+}
+
+.Vocals {
+    font-size: var(--lyrics-size);
+    color: white;
+    opacity: var(--vocal-idle-opacity);
+    transition: opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease;
+    filter: blur(1px);
+    transform: scale(0.98);
+    transform-origin: left center;
+
+    background-clip: text;
+    -webkit-background-clip: text;
+
+    &.Active {
+        opacity: var(--vocal-active-opacity);
+        filter: blur(0);
+        transform: scale(1.05);
+        /* Make active line pop */
+
+        /* Karaoke Effect */
+        background-color: white;
+        background-image: linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.5) 50%);
+        background-size: 200% 100%;
+        animation: karaokeFill var(--duration) linear forwards;
+        /* Note: Duration is hardcoded here but ideally controlled via inline styles in JS or standard reveal */
+
+        /* Simpler alternative if animation is too complex without precise timing: */
+        color: white;
+    }
+
+    &.Sung {
+        opacity: var(--vocal-sung-opacity);
+        filter: blur(0.5px);
+        color: white;
+    }
+}
+
+.Line {
+    white-space: pre-wrap;
+    line-height: 1.3;
+}
+
+@keyframes karaokeFill {
+    from {
+        background-position: 100% 0;
+    }
+
+    to {
+        background-position: 0 0;
+    }
+}
