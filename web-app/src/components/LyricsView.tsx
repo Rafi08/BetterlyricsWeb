@@ -140,6 +140,11 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                     ref={isActive ? activeLineRef : null}
                                     className={`VocalsGroup`}
                                     onClick={() => seek && seek(line.time * 1000)}
+                                    style={{
+                                        textAlign: line.oppositeAligned ? 'right' : 'left',
+                                        alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start',
+                                        width: '100%'
+                                    }}
                                 >
                                     <span className={`Vocals ${isActive ? 'Active' : ''} ${isSung ? 'Sung' : ''}`}>
                                         {line.words.map((word, wIndex) => {
@@ -198,6 +203,11 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                 ref={isActive ? activeLineRef : null}
                                 className={`VocalsGroup`}
                                 onClick={() => !('isGap' in line) && seek && seek(line.time * 1000)}
+                                style={{
+                                    textAlign: line.oppositeAligned ? 'right' : 'left',
+                                    alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start',
+                                    width: '100%'
+                                }}
                             >
                                 <span className={`Vocals ${isActive ? 'Active' : ''} ${isSung ? 'Sung' : ''}`}>
                                     {words.map((word, wIndex) => {

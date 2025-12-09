@@ -8,6 +8,7 @@ export interface LyricLine {
     time: number; // in seconds
     text: string;
     words?: LyricWord[];
+    oppositeAligned?: boolean;
 }
 
 export function parseLrc(lrc: string): LyricLine[] {

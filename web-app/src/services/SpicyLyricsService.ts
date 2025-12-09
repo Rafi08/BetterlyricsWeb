@@ -120,7 +120,8 @@ export const SpicyLyricsService = {
                 lines.push({
                     time: content.Lead.StartTime,
                     text: rawText,
-                    words: words
+                    words: words,
+                    oppositeAligned: content.OppositeAligned === true
                 });
             }
         }
