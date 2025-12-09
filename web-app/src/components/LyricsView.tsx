@@ -16,24 +16,32 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
     const activeLineRef = useRef<HTMLDivElement>(null);
     const [activeLineIndex, setActiveLineIndex] = useState<number>(-1);
 
-    // Process lyrics to include visual gaps
+    // Process lyrics to include visual gaps & Intro gap
     const processedLyrics = useMemo(() => {
         if (!lyrics || lyrics.length === 0) return [];
 
         const result: (LyricLine | { isGap: true, time: number })[] = [];
+
+        // 1. Intro Gap Detection
+        if (lyrics[0].time > GAP_THRESHOLD) {
+            result.push({ isGap: true, time: 2 } as any);
+        }
 
         for (let i = 0; i < lyrics.length; i++) {
             result.push(lyrics[i]);
 
             // Check for gap
             if (i < lyrics.length - 1) {
-                const currentEnd = lyrics[i].time;
+                const currentEnd = lyrics[i].time; // Actually start time of current
+                // Note: Standard LRC doesn't have end times, so we check diff between starts
+
                 const nextStart = lyrics[i + 1].time;
 
                 // If there is a significant instrumental gap
-                if (nextStart - currentEnd > GAP_THRESHOLD) {
+                // We assume line duration is roughy 3s if unknown, but here we just check start-to-start dist
+                if (nextStart - currentEnd > GAP_THRESHOLD + 3) {
                     // Approximate time for the dots to appear
-                    result.push({ isGap: true, time: currentEnd + 2 } as any);
+                    result.push({ isGap: true, time: currentEnd + 5 } as any);
                 }
             }
         }
@@ -55,7 +63,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
         if (index !== -1 && index !== activeLineIndex) {
             setActiveLineIndex(index);
         }
-    }, [position, processedLyrics]); // Removed activeLineIndex to avoid redundant updates, logic is sound
+    }, [position, processedLyrics]);
 
     useEffect(() => {
         if (activeLineRef.current) {
@@ -83,7 +91,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                     className={`VocalsGroup ${index <= activeLineIndex ? 'Sung' : ''}`}
                                     style={{ opacity: 0.3, fontSize: '2rem', margin: '2rem 0' }}
                                 >
-                                    <span className="Vocals">• • •</span>
+                                    {/* Added Start/End Dots animation class */}
+                                    <span className="Vocals Dots">• • •</span>
                                 </div>
                             );
                         }
@@ -92,8 +101,13 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                         const isSung = index < activeLineIndex;
 
                         const nextLineTime = processedLyrics[index + 1]?.time || (line.time + 3);
-                        // Ensure a minimum duration of 1s to avoid glitchy super-fast fills
                         const duration = Math.max(1, nextLineTime - line.time);
+
+                        // Simulated Word-by-Word Sync
+                        // Split line into words and distribute duration based on length
+                        const words = line.text.split(' ');
+                        const totalChars = line.text.length;
+                        let accumulatedDelay = 0;
 
                         return (
                             <div
@@ -102,11 +116,43 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                 className={`VocalsGroup`}
                                 onClick={() => !('isGap' in line) && seek && seek(line.time * 1000)}
                             >
-                                <span
-                                    className={`Vocals ${isActive ? 'Active' : ''} ${isSung ? 'Sung' : ''}`}
-                                    style={{ '--duration': `${duration}s` } as React.CSSProperties}
-                                >
-                                    {line.text}
+                                <span className={`Vocals ${isActive ? 'Active' : ''} ${isSung ? 'Sung' : ''}`}>
+                                    {words.map((word, wIndex) => {
+                                        // Calculate roughly how much time this word takes
+                                        const wordDuration = (word.length / totalChars) * duration;
+                                        const currentDelay = accumulatedDelay;
+                                        accumulatedDelay += wordDuration;
+
+                                        return (
+                                            <span
+                                                key={wIndex}
+                                                className="Word"
+                                                style={{
+                                                    display: 'inline-block',
+                                                    marginRight: '0.3em',
+                                                    animationName: isActive ? 'karaokeFill' : 'none',
+                                                    animationDuration: `${wordDuration}s`,
+                                                    animationDelay: `${currentDelay}s`,
+                                                    animationFillMode: 'forwards',
+                                                    animationTimingFunction: 'linear',
+                                                    // Base state (before animation)
+                                                    color: isSung ? 'white' : 'inherit',
+                                                    opacity: isSung ? 0.5 : 1,
+
+                                                    // We need to apply background clip to EACH WORD for this effect to work
+                                                    backgroundClip: 'text',
+                                                    WebkitBackgroundClip: 'text',
+                                                    backgroundImage: isActive
+                                                        ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.5) 50%)`
+                                                        : 'none',
+                                                    backgroundSize: '200% 100%',
+                                                    backgroundPosition: '100% 0',
+                                                }}
+                                            >
+                                                {word}
+                                            </span>
+                                        );
+                                    })}
                                 </span>
                             </div>
                         );
