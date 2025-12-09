@@ -64,7 +64,10 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
         });
 
         if (index !== -1 && index !== activeLineIndex) {
+            console.log(`[LyricsView] Update Active Index: ${index} (Pos: ${effectivePosition.toFixed(2)})`);
             setActiveLineIndex(index);
+        } else if (index === -1 && processedLyrics.length > 0) {
+            console.log(`[LyricsView] No active line found. Pos: ${effectivePosition.toFixed(2)}. First: ${processedLyrics[0].time}, Last: ${processedLyrics[processedLyrics.length - 1].time}`);
         }
     }, [position, processedLyrics]);
 
