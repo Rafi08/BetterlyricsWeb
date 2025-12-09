@@ -17,6 +17,7 @@ const Content = () => {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
         <h1>Beautiful Lyrics Web</h1>
+        <small style={{ marginBottom: '2rem', opacity: 0.7 }}>v2.2 (Blur Fix)</small>
         <button onClick={login} style={{ padding: '1rem 2rem', fontSize: '1.2rem', cursor: 'pointer' }}>
           Login with Spotify
         </button>
@@ -28,8 +29,8 @@ const Content = () => {
     <>
       <div style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 1000 }}>
         {/* Controls Overlay */}
-        <div style={{ background: 'rgba(0,0,0,0.5)', padding: '0.5rem', borderRadius: '8px' }}>
-          <small>{currentTrack ? currentTrack.name : 'Waiting for music...'}</small>
+        <div style={{ background: 'rgba(0,0,0,0.5)', padding: '0.5rem', borderRadius: '8px', color: 'white' }}>
+          <small>{currentTrack ? currentTrack.name : 'Waiting...'}</small>
           <button onClick={logout} style={{ marginLeft: '1rem' }}>Logout</button>
         </div>
       </div>
@@ -37,6 +38,7 @@ const Content = () => {
       {!isActive ? (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
           <h2>Ready to play!</h2>
+          <small style={{ marginBottom: '1rem', opacity: 0.7 }}>v2.2 (Blur Fix)</small>
           <p>Open Spotify and connect to <strong>Beautiful Lyrics Web</strong></p>
           <small>Device ID: {deviceId}</small>
         </div>
