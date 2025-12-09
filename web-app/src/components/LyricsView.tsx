@@ -177,10 +177,11 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                         // Combined Animation: Fill + Pop
                                                         // We can comma separate animations
                                                         animationName: isActive ? 'karaokeFill, wordPop' : 'none',
-                                                        animationDuration: `${word.duration}s, ${word.duration}s`,
+                                                        // Fill matches word duration exactly. Pop lingers (slow return).
+                                                        animationDuration: `${word.duration}s, ${word.duration + 0.6}s`,
                                                         animationDelay: `${delay}s, ${delay}s`,
                                                         animationFillMode: 'forwards, none', // wordPop doesn't hold (returns to normal)
-                                                        animationTimingFunction: 'linear, ease-in-out',
+                                                        animationTimingFunction: 'linear, ease-out', // ease-out for softer return
 
                                                         // Color Logic
                                                         color: isActive ? 'transparent' : 'white',
