@@ -1,6 +1,13 @@
+export interface LyricWord {
+    text: string;
+    time: number; // Start time relative to track start (in seconds)
+    duration: number; // Duration in seconds
+}
+
 export interface LyricLine {
     time: number; // in seconds
     text: string;
+    words?: LyricWord[];
 }
 
 export function parseLrc(lrc: string): LyricLine[] {

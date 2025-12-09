@@ -82,38 +82,33 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                         const isActive = index === activeLineIndex;
                         const isSung = index < activeLineIndex;
 
-                        // Calculate duration regardless of line type
-                        const nextLineTime = processedLyrics[index + 1]?.time || (line.time + 5);
-                        const duration = Math.max(1, nextLineTime - line.time);
-
-                        // If GAP item:
+                        // Gap Logic
                         if ('isGap' in line) {
+                            // Calculate duration based on next line time or default
+                            const nextLineTime = processedLyrics[index + 1]?.time || (line.time + 5);
+                            const duration = Math.max(1, nextLineTime - line.time);
+
                             return (
                                 <div
                                     key={`gap-${index}`}
                                     ref={isActive ? activeLineRef : null}
-                                    className={`VocalsGroup`} // removed sung check diff
+                                    className={`VocalsGroup`}
                                     style={{ margin: '2rem 0', opacity: isSung ? 0.3 : 1 }}
                                 >
                                     <span
                                         className={`Vocals ${isActive ? 'Active' : ''}`}
                                         style={{
-                                            // Apply filling animation to the WHOLE block of dots
                                             fontSize: '2rem',
                                             '--duration': `${duration}s`,
-
-                                            // Ensure the fill works like words
                                             backgroundClip: 'text',
                                             WebkitBackgroundClip: 'text',
                                             backgroundImage: isActive
                                                 ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.5) 50%)`
-                                                : `linear-gradient(to right, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.3) 50%)`, // Idle state color
+                                                : `linear-gradient(to right, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.3) 50%)`,
                                             backgroundSize: '200% 100%',
                                             backgroundPosition: isActive ? '0 0' : '100% 0',
-                                            // Use the global keyframe defined in SCSS
                                             animation: isActive ? `karaokeFill ${duration}s linear forwards` : 'none',
-
-                                            color: 'transparent' // Important for background clip
+                                            color: 'transparent'
                                         } as React.CSSProperties}
                                     >
                                         • • •
@@ -123,6 +118,66 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                         }
 
                         // Normal Line Logic
+                        // Calculate line duration (fallback for when no word timings)
+                        const nextLineTime = processedLyrics[index + 1]?.time || (line.time + 5);
+                        const lineDuration = Math.max(1, nextLineTime - line.time);
+
+                        // If we have real word timings, use them!
+                        if (line.words && line.words.length > 0) {
+                            return (
+                                <div
+                                    key={index}
+                                    ref={isActive ? activeLineRef : null}
+                                    className={`VocalsGroup`}
+                                    onClick={() => seek && seek(line.time * 1000)}
+                                >
+                                    <span className={`Vocals ${isActive ? 'Active' : ''} ${isSung ? 'Sung' : ''}`}>
+                                        {line.words.map((word, wIndex) => {
+                                            // Determine word state relative to current position
+                                            // To make it smooth, we need to know if THIS word is currently being sung.
+                                            // However, `isActive` only tells us if the LINE is active.
+
+                                            // Simple approach: Use animation delay based on word.time relative to line.time
+                                            // The word.time is absolute track time. line.time is also absolute.
+
+                                            const wordStartDelay = word.time - line.time;
+                                            const wordDuration = word.duration;
+
+                                            return (
+                                                <span
+                                                    key={wIndex}
+                                                    className="Word"
+                                                    style={{
+                                                        display: 'inline-block',
+                                                        marginRight: '0.3em',
+                                                        animationName: isActive ? 'karaokeFill' : 'none',
+                                                        animationDuration: `${wordDuration}s`,
+                                                        animationDelay: `${wordStartDelay}s`, // Delay relative to line start
+                                                        animationFillMode: 'forwards',
+                                                        animationTimingFunction: 'linear',
+                                                        color: isSung ? 'white' : 'inherit',
+                                                        opacity: isSung ? 0.5 : 1, // Line level opacity handles this usually, but keep for safety
+
+                                                        // Gradient/Fill styles
+                                                        backgroundClip: 'text',
+                                                        WebkitBackgroundClip: 'text',
+                                                        backgroundImage: isActive
+                                                            ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.5) 50%)`
+                                                            : 'none',
+                                                        backgroundSize: '200% 100%',
+                                                        backgroundPosition: '100% 0',
+                                                    }}
+                                                >
+                                                    {word.text}
+                                                </span>
+                                            );
+                                        })}
+                                    </span>
+                                </div>
+                            );
+                        }
+
+                        // Fallback: Simulated word sync (current behavior)
                         const words = line.text.split(' ');
                         const totalChars = line.text.length;
                         let accumulatedDelay = 0;
@@ -136,7 +191,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                             >
                                 <span className={`Vocals ${isActive ? 'Active' : ''} ${isSung ? 'Sung' : ''}`}>
                                     {words.map((word, wIndex) => {
-                                        const wordDuration = (word.length / totalChars) * duration * 0.9; // 0.9 factor to finish slightly before next line
+                                        const wordDuration = (word.length / totalChars) * lineDuration * 0.9;
                                         const currentDelay = accumulatedDelay;
                                         accumulatedDelay += wordDuration;
 

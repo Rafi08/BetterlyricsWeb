@@ -1,0 +1,151 @@
+/* Base styles for all dynamic backgrounds */
+.spicy-dynamic-bg {
+  height: 100%;
+  left: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 100%;
+  transform-origin: center center;
+  filter: saturate(2.5) brightness(0.65);
+}
+
+body:has(.starrynight-bg-container) #main .spicy-dynamic-bg:not(.StaticBackground),
+body:has(.glassify-bg .bg.animated) #main .spicy-dynamic-bg:not(.StaticBackground) {
+  display: none !important;
+}
+
+aside .spicy-dynamic-bg {
+  border-radius: var(--section-border-radius, 8px);
+}
+
+/* Container styles */
+.spicy-dynamic-bg-in-this {
+  overflow: hidden;
+  position: relative;
+}
+
+/* Special styling for side panel */
+aside .spicy-dynamic-bg {
+  max-height: 100%;
+  max-width: 100%;
+}
+
+aside .spicy-dynamic-bg {
+  filter: brightness(0.6) saturate(2.65);
+}
+
+/* Video element styling */
+aside video {
+  filter: brightness(0.6);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0) 100%);
+  transition: filter 0.25s linear;
+}
+
+aside video:hover {
+  filter: brightness(0.95);
+}
+
+/* Reset styles for videos inside VideoPlayer__container */
+.VideoPlayer__container video {
+  filter: none !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+}
+
+.main-nowPlayingView-coverArtContainer :is(div, .E08D6ucrHuPJYzzGO7HG):has(video)::before,
+.main-nowPlayingView-coverArtContainer :is(div, .E08D6ucrHuPJYzzGO7HG):has(video)::after,
+div.Of__Db4QgB9osz_mFxhw:has(video)::before,
+div.Of__Db4QgB9osz_mFxhw:has(video)::after,
+div.UUydeXMsXVZofB0YAOgm:has(.main-trackInfo-container)::before,
+div.UUydeXMsXVZofB0YAOgm:has(.main-trackInfo-container)::after {
+  display: none;
+}
+
+aside:has(.spicy-dynamic-bg) .AAdBM1nhG73supMfnYX7,
+aside:has(.spicy-dynamic-bg) .iHa_q9pq4un3VNRQgwTx {
+  z-index: 1;
+  position: relative;
+}
+
+/* Low quality mode styles - kept unchanged as requested */
+#SpicyLyricsPage .spicy-dynamic-bg.StaticBackground {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: brightness(0.5) saturate(1.25);
+  scale: 1;
+  opacity: 1;
+  transition: opacity 0.3s;
+}
+
+#SpicyLyricsPage .spicy-dynamic-bg.StaticBackground.Hidden {
+  opacity: 0;
+}
+
+/* Hide sidebar background when in fullscreen lyrics mode */
+body:has(#SpicyLyricsPage.Fullscreen) .Root__right-sidebar
+  aside:is(.NowPlayingView, .spicy-dynamic-bg-in-this)
+  .spicy-dynamic-bg {
+  display: none;
+}
+
+.Root__right-sidebar
+  aside#Desktop_PanelContainer_Id:has(.spicy-dynamic-bg)
+  .main-buddyFeed-scrollBarContainer {
+  z-index: 1;
+}
+
+#SpicyLyricsPage .spicy-dynamic-bg.ColorBackground {
+  /* background-color: rgba(0, 0, 0, 0.25); */
+  /* background: linear-gradient(var(--ColorBackgroundRotation), var(--DesaturatedColor), var(--VibrantColor), var(--DarkVibrantColor), var(--BaseColor), var(--DesaturatedColor)); */
+  background-color: rgba(var(--MinContrastColor));
+  /* animation: ColorBackgroundBackgroundRotation 20s linear infinite; */
+  transition: background-color 1.5s;
+  filter: none;
+}
+
+/* @property --ColorBackgroundRotation {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+} */
+
+#SpicyLyricsPage .spicy-dynamic-bg.ColorBackground::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 90%;
+  background-color: rgba(var(--HighContrastColor));
+  mask-image: linear-gradient(to top, transparent, black 145%);
+  z-index: 1;
+  transition: background-color 1.5s;
+}
+
+#SpicyLyricsPage .spicy-dynamic-bg.ColorBackground::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.3;
+  background: linear-gradient(to top, rgb(0, 0, 0), transparent);
+  z-index: 5;
+}
+
+#SpicyLyricsPage .spicy-dynamic-bg.CanvasBackground {
+  width: 100%;
+  height: 100%;
+}
+
+#SpicyLyricsPage .spicy-dynamic-bg.CanvasBackground video {
+  width: 100%;
+  height: 100%;
+}
+
+#SpicyLyricsPage .spicy-dynamic-bg.ColorBackground {
+  z-index: -1 !important;
+}

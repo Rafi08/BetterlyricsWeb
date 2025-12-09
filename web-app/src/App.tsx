@@ -11,7 +11,7 @@ import TrackInfo from './components/TrackInfo';
 const Content = () => {
   const { token, login, logout } = useAuth();
   const { deviceId, currentTrack, nextTracks, isActive, position, seek } = useSpotifyPlayer();
-  const { lyrics } = useLyrics(currentTrack);
+  const { lyrics } = useLyrics(currentTrack, token);
 
   if (!token) {
     return (
