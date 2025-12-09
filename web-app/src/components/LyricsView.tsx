@@ -50,6 +50,13 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
         // Use compensated position
         const effectivePosition = position + SYNC_OFFSET;
 
+        // Check if lyrics are static (all 0 or only one line 0)
+        const isStatic = lyrics.every(l => l.time === 0);
+        if (isStatic) {
+            setActiveLineIndex(-1);
+            return;
+        }
+
         // Find the active line (lines are sorted by time)
         const index = processedLyrics.findIndex((line, i) => {
             const nextLine = processedLyrics[i + 1];

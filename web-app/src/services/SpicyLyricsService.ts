@@ -66,6 +66,7 @@ export const SpicyLyricsService = {
         }
 
         const lyricsData = lyricsJob.result.responseData;
+        console.log('SpicyLyrics Raw Data:', lyricsData); // DEBUG LOG
         return this.parseSpicyLyrics(lyricsData);
     },
 
