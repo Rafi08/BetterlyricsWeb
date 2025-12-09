@@ -148,15 +148,15 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                 >
                                     <span className={`Vocals ${isActive ? 'Active' : ''} ${isSung ? 'Sung' : ''}`}>
                                         {line.words.map((word, wIndex) => {
-                                            // Determine word state relative to current position
-                                            // To make it smooth, we need to know if THIS word is currently being sung.
-                                            // However, `isActive` only tells us if the LINE is active.
+                                            // word.time is absolute (seconds)
+                                            // line.time is absolute (seconds)
+                                            // We want delay relative to line start.
+                                            // HOWEVER: CSS animation-delay starts counting when the class is added.
+                                            // The class 'Active' is added roughly at `line.time`.
+                                            // So `word.time - line.time` is the correct delay.
+                                            let delay = Math.max(0, word.time - line.time);
 
-                                            // Simple approach: Use animation delay based on word.time relative to line.time
-                                            // The word.time is absolute track time. line.time is also absolute.
-
-                                            const wordStartDelay = word.time - line.time;
-                                            const wordDuration = word.duration;
+                                            // Safety: Ensure delay isn't negative or huge if timestamps are weird.
 
                                             return (
                                                 <span
@@ -166,14 +166,12 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                         display: 'inline-block',
                                                         marginRight: '0.3em',
                                                         animationName: isActive ? 'karaokeFill' : 'none',
-                                                        animationDuration: `${wordDuration}s`,
-                                                        animationDelay: `${wordStartDelay}s`, // Delay relative to line start
+                                                        animationDuration: `${word.duration}s`,
+                                                        animationDelay: `${delay}s`,
                                                         animationFillMode: 'forwards',
                                                         animationTimingFunction: 'linear',
                                                         color: isSung ? 'white' : 'inherit',
-                                                        opacity: isSung ? 0.5 : 1, // Line level opacity handles this usually, but keep for safety
-
-                                                        // Gradient/Fill styles
+                                                        opacity: isSung ? 0.5 : 1,
                                                         backgroundClip: 'text',
                                                         WebkitBackgroundClip: 'text',
                                                         backgroundImage: isActive
