@@ -105,7 +105,7 @@
     }
 
     25% {
-        transform: translateY(-0.1em) scale(1.05);
+        transform: translateY(var(--pop-y, -0.1em)) scale(var(--pop-scale, 1.05));
     }
 
     100% {

@@ -166,6 +166,12 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
 
                                             const isWordSung = (effectivePosition > (word.time + word.duration));
 
+                                            // Dynamic Animation Intensity
+                                            // Max effect at 0.5s duration.
+                                            const durationFactor = Math.min(1, word.duration / 0.5);
+                                            const popScale = 1 + (0.05 * durationFactor); // Max 1.05
+                                            const popY = -0.1 * durationFactor; // Max -0.1em
+
                                             return (
                                                 <span
                                                     key={wIndex}
@@ -173,6 +179,10 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                     style={{
                                                         display: 'inline-block',
                                                         marginRight: '0.3em',
+
+                                                        // Pass dynamic values to CSS
+                                                        '--pop-scale': popScale,
+                                                        '--pop-y': `${popY}em`,
 
                                                         // Combined Animation: Fill + Pop
                                                         // We can comma separate animations
@@ -202,7 +212,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                             ? '0 0 10px rgba(255, 255, 255, 0.4)' // Reduced glow
                                                             : 'none',
                                                         transition: 'opacity 0.2s ease, text-shadow 0.2s ease'
-                                                    }}
+                                                    } as React.CSSProperties}
                                                 >
                                                     {word.text}
                                                 </span>
