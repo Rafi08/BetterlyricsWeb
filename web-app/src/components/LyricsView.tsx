@@ -162,16 +162,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                             // Safety: Ensure delay isn't negative or huge if timestamps are weird.
 
                                             // Status within line
-                                            const isWordActive = delay <= 0.2 && (delay + word.duration) > 0; // Approximate "playing now"
-                                            // Better logic: The word is active if CurrentTime is within [word.time, word.endTime]
-                                            // CurrentTime ~= effectivePosition
-
-                                            // word.time is seconds. effectivePosition is seconds.
-                                            // const isWordActive = effectivePosition >= word.time && effectivePosition < (word.time + word.duration);
-                                            // Actually, we rely on the CSS delay which is derived from `word.time - line.time`.
-                                            // The `Active` class (parent) starts at `line.time`.
-                                            // Animation starts at `delay`.
-                                            // So the word is "animating" from `delay` to `delay + word.duration`.
+                                            // The word is "animating" from `delay` to `delay + word.duration`.
 
                                             const isWordSung = (effectivePosition > (word.time + word.duration));
 
