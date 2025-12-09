@@ -80,6 +80,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
         }
     }, [activeLineIndex]);
 
+    const effectivePosition = position + SYNC_OFFSET;
+
     return (
         <div className="LyricsScrollContainer" ref={containerRef}>
             <div className="Lyrics">
