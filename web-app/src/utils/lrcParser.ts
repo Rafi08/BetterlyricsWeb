@@ -9,6 +9,7 @@ export interface LyricLine {
     text: string;
     words?: LyricWord[];
     oppositeAligned?: boolean;
+    isBackground?: boolean;
 }
 
 export function parseLrc(lrc: string): LyricLine[] {

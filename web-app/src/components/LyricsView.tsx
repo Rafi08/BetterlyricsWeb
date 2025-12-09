@@ -153,13 +153,21 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                     className={`VocalsGroup`}
                                     onClick={() => seek && seek(line.time * 1000)}
                                     style={{
-                                        textAlign: line.oppositeAligned ? 'right' : 'left',
-                                        alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start',
+                                        textAlign: (line.oppositeAligned || line.isBackground) ? 'right' : 'left',
+                                        alignSelf: (line.oppositeAligned || line.isBackground) ? 'flex-end' : 'flex-start',
                                         maxWidth: '70%', // Create visual separation
                                         width: 'fit-content' // Allow it to shrink if line is short
                                     }}
                                 >
-                                    <span className={`Vocals ${isActive ? 'Active' : ''} ${isSung ? 'Sung' : ''}`}>
+                                    <span
+                                        className={`Vocals ${isActive ? 'Active' : ''} ${isSung ? 'Sung' : ''}`}
+                                        style={{
+                                            // Background Vocal Styling
+                                            // "smaller and thickness of font reduced"
+                                            fontSize: (line.oppositeAligned || line.isBackground) ? '70%' : undefined,
+                                            fontWeight: (line.oppositeAligned || line.isBackground) ? 400 : undefined
+                                        }}
+                                    >
                                         {line.words.map((word, wIndex) => {
                                             // word.time is absolute (seconds)
                                             // line.time is absolute (seconds)

@@ -127,6 +127,54 @@ export const SpicyLyricsService = {
                     words: words,
                     oppositeAligned: content.OppositeAligned === true
                 });
+
+                // Background Vocals Handling
+                if (content.Background && Array.isArray(content.Background)) {
+                    for (const bg of content.Background) {
+                        // Background entry usually has words too, sometimes just "Text"
+                        // Based on user JSON: { Text: "Let's", StartTime: ..., EndTime: ..., Syllables: [...] }
+
+                        let bgWords: LyricWord[] = [];
+                        let bgText = bg.Text || "";
+
+                        if (bg.Syllables && Array.isArray(bg.Syllables)) {
+                            // Re-use syllable parsing logic or simplified version
+                            // Since Background syllables are same structure:
+                            let curText = "";
+                            let curStart = -1;
+
+                            for (let k = 0; k < bg.Syllables.length; k++) {
+                                const s = bg.Syllables[k];
+                                if (curStart === -1) curStart = s.StartTime;
+                                curText += s.Text;
+                                if (!s.IsPartOfWord || k === bg.Syllables.length - 1) {
+                                    bgWords.push({
+                                        text: curText.trim(),
+                                        time: curStart,
+                                        duration: s.EndTime - curStart
+                                    });
+                                    curText = "";
+                                    curStart = -1;
+                                }
+                            }
+                        } else {
+                            // Fallback if no syllables, just one word/line
+                            bgWords.push({
+                                text: bgText,
+                                time: bg.StartTime,
+                                duration: bg.EndTime - bg.StartTime
+                            });
+                        }
+
+                        lines.push({
+                            time: bg.StartTime,
+                            text: bgText,
+                            words: bgWords,
+                            oppositeAligned: true, // Background is always opposite/right aligned
+                            isBackground: true
+                        });
+                    }
+                }
             }
         }
 
