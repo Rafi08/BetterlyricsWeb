@@ -49,9 +49,6 @@ void main() {
     gl_FragColor.a = 1.0;
   }
 
-  // CenterCircle removed to prevent dark overlap artifacts
-  // vec2 CenterCircleOffset = ... (removed)
-
   vec2 LeftCircleOffset = (gl_FragCoord.xy - LeftCircleOrigin);
   if (length(LeftCircleOffset) <= LeftCircleRadius) {
     vec4 newColor = texture2D(
@@ -61,7 +58,7 @@ void main() {
         (Time * 1.0)
       )
     );
-    newColor.a *= 0.4; // Reduced alpha from 0.5
+    newColor.a *= 0.5;
 
     gl_FragColor.rgb = ((newColor.rgb * newColor.a) + (gl_FragColor.rgb * (1.0 - newColor.a)));
     gl_FragColor.a = (newColor.a + (gl_FragColor.a * (1.0 - newColor.a)));
@@ -76,7 +73,7 @@ void main() {
         (Time * -0.75)
       )
     );
-    newColor.a *= 0.4; // Reduced alpha from 0.5
+    newColor.a *= 0.5;
 
     gl_FragColor.rgb = ((newColor.rgb * newColor.a) + (gl_FragColor.rgb * (1.0 - newColor.a)));
     gl_FragColor.a = (newColor.a + (gl_FragColor.a * (1.0 - newColor.a)));
@@ -94,8 +91,6 @@ const BackgroundMesh = ({ texture }: { texture: THREE.Texture | null }) => {
     BlurredCoverArt: { value: null },
     BackgroundCircleOrigin: { value: new THREE.Vector2() },
     BackgroundCircleRadius: { value: 0 },
-    CenterCircleOrigin: { value: new THREE.Vector2() },
-    CenterCircleRadius: { value: 0 },
     LeftCircleOrigin: { value: new THREE.Vector2() },
     LeftCircleRadius: { value: 0 },
     RightCircleOrigin: { value: new THREE.Vector2() },
@@ -109,24 +104,19 @@ const BackgroundMesh = ({ texture }: { texture: THREE.Texture | null }) => {
     const w = width * dpr;
     const h = height * dpr;
 
-    const largestAxis = w > h ? "X" : "Y";
-    const largestAxisSize = w > h ? w : h;
+    const largestAxisSize = Math.max(w, h);
 
-    // Background circle - reduced size to prevent too much overlap
+    // Background circle
     uniforms.BackgroundCircleOrigin.value.set(w / 2, h / 2);
-    uniforms.BackgroundCircleRadius.value = largestAxisSize * 1.2; // Reduced from 1.5
+    uniforms.BackgroundCircleRadius.value = largestAxisSize * 1.4;
 
-    // Center circle - slightly smaller
-    uniforms.CenterCircleOrigin.value.set(w / 2, h / 2);
-    uniforms.CenterCircleRadius.value = largestAxisSize * (largestAxis === "X" ? 0.7 : 0.6); // Reduced from 1 : 0.75
+    // Left circle
+    uniforms.LeftCircleOrigin.value.set(w * 0.2, h * 0.8);
+    uniforms.LeftCircleRadius.value = largestAxisSize * 0.6;
 
-    // Left circle - repositioned and smaller to avoid diamond shapes
-    uniforms.LeftCircleOrigin.value.set(w * 0.15, h * 0.85); // Moved more inward
-    uniforms.LeftCircleRadius.value = largestAxisSize * 0.5; // Reduced from 0.75
-
-    // Right circle - repositioned and smaller
-    uniforms.RightCircleOrigin.value.set(w * 0.85, h * 0.15); // Moved more inward
-    uniforms.RightCircleRadius.value = largestAxisSize * 0.45; // Reduced from 0.65 : 0.5
+    // Right circle 
+    uniforms.RightCircleOrigin.value.set(w * 0.8, h * 0.2);
+    uniforms.RightCircleRadius.value = largestAxisSize * 0.6;
 
   }, [size, uniforms]);
 
@@ -210,6 +200,17 @@ const Background: React.FC<BackgroundProps> = ({ coverArt }) => {
       <Canvas orthographic camera={{ zoom: 1, position: [0, 0, 1] }} dpr={window.devicePixelRatio}>
         <BackgroundMesh texture={texture} />
       </Canvas>
+      {/* Overlay Blur to remove sharp edges/artifacts */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backdropFilter: 'blur(100px)', // Heavy blur to smooth out gradients
+        WebkitBackdropFilter: 'blur(100px)', // Safari support
+        zIndex: 1
+      }} />
     </div>
   );
 };
