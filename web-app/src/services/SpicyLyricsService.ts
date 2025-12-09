@@ -1,7 +1,10 @@
 
 import type { LyricLine, LyricWord } from '../utils/lrcParser';
 
-const API_URL = 'https://api.spicylyrics.org/query';
+const SPICY_API_URL = 'https://api.spicylyrics.org/query';
+// Use a CORS proxy to bypass "Access-Control-Allow-Origin" restriction on the client side.
+const PROXY_URL = 'https://corsproxy.io/?';
+const API_URL = `${PROXY_URL}${encodeURIComponent(SPICY_API_URL)}`;
 
 interface SpicyLyricsResponse {
     jobs: {
