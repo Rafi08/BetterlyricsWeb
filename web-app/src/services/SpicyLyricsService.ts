@@ -67,7 +67,11 @@ export const SpicyLyricsService = {
 
         const lyricsData = lyricsJob.result.responseData;
         console.log('SpicyLyrics Raw Data:', lyricsData); // DEBUG LOG
-        return this.parseSpicyLyrics(lyricsData);
+        const parsed = this.parseSpicyLyrics(lyricsData);
+        if (parsed.length > 0) {
+            console.log('[SpicyLyricsService] Parsed Lines:', parsed.length, 'First Line Words:', parsed[0].words);
+        }
+        return parsed;
     },
 
     parseSpicyLyrics(data: any): LyricLine[] {

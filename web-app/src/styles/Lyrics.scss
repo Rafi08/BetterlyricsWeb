@@ -65,16 +65,8 @@
         opacity: var(--vocal-active-opacity);
         filter: blur(0);
         transform: scale(1.05);
+
         /* Make active line pop */
-
-        /* Karaoke Effect */
-        background-color: white;
-        background-image: linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.5) 50%);
-        background-size: 200% 100%;
-        animation: karaokeFill var(--duration) linear forwards;
-        /* Note: Duration is hardcoded here but ideally controlled via inline styles in JS or standard reveal */
-
-        /* Simpler alternative if animation is too complex without precise timing: */
         color: white;
 
         /* User Request: Text Glow */

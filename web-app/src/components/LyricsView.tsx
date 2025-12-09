@@ -143,7 +143,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                     style={{
                                         textAlign: line.oppositeAligned ? 'right' : 'left',
                                         alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start',
-                                        width: '100%'
+                                        maxWidth: '70%', // Create visual separation
+                                        width: 'fit-content' // Allow it to shrink if line is short
                                     }}
                                 >
                                     <span className={`Vocals ${isActive ? 'Active' : ''} ${isSung ? 'Sung' : ''}`}>
@@ -204,7 +205,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                 style={{
                                     textAlign: line.oppositeAligned ? 'right' : 'left',
                                     alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start',
-                                    width: '100%'
+                                    maxWidth: '70%',
+                                    width: 'fit-content'
                                 }}
                             >
                                 <span className={`Vocals ${isActive ? 'Active' : ''} ${isSung ? 'Sung' : ''}`}>
