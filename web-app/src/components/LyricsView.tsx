@@ -171,7 +171,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                         animationDelay: `${delay}s`,
                                                         animationFillMode: 'forwards',
                                                         animationTimingFunction: 'linear',
-                                                        color: isSung ? 'white' : 'inherit',
+                                                        // CRITICAL FIX: Make text transparent so background gradient shows through
+                                                        color: isActive ? 'transparent' : 'white',
                                                         opacity: isSung ? 0.5 : 1,
                                                         backgroundClip: 'text',
                                                         WebkitBackgroundClip: 'text',
