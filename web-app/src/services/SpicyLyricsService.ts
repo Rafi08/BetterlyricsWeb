@@ -42,7 +42,7 @@ export const SpicyLyricsService = {
             headers: {
                 'Content-Type': 'application/json',
                 'SpicyLyrics-Version': '5.18.55',
-                'Authorization': `Bearer ${token}`
+                'SpicyLyrics-WebAuth': `Bearer ${token}`
             },
             body: JSON.stringify({
                 jobs,
