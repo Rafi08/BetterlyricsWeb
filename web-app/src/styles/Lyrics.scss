@@ -69,8 +69,8 @@
         /* Make active line pop */
         color: white;
 
-        /* User Request: Text Glow */
-        text-shadow: 0 0 15px rgba(255, 255, 255, 0.6), 0 0 30px rgba(255, 255, 255, 0.4);
+        /* User Request: Text Glow - REMOVED from line level, moved to word level */
+        /* text-shadow: 0 0 15px rgba(255, 255, 255, 0.6), 0 0 30px rgba(255, 255, 255, 0.4); */
     }
 
     &.Sung {
@@ -96,6 +96,20 @@
 
     to {
         background-position: 0 0;
+    }
+}
+
+@keyframes wordPop {
+    0% {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(-0.2em) scale(1.1);
+    }
+
+    100% {
+        transform: translateY(0) scale(1);
     }
 }
 

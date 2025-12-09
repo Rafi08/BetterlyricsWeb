@@ -159,6 +159,20 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
 
                                             // Safety: Ensure delay isn't negative or huge if timestamps are weird.
 
+                                            // Status within line
+                                            const isWordActive = delay <= 0.2 && (delay + word.duration) > 0; // Approximate "playing now"
+                                            // Better logic: The word is active if CurrentTime is within [word.time, word.endTime]
+                                            // CurrentTime ~= effectivePosition
+
+                                            // word.time is seconds. effectivePosition is seconds.
+                                            // const isWordActive = effectivePosition >= word.time && effectivePosition < (word.time + word.duration);
+                                            // Actually, we rely on the CSS delay which is derived from `word.time - line.time`.
+                                            // The `Active` class (parent) starts at `line.time`.
+                                            // Animation starts at `delay`.
+                                            // So the word is "animating" from `delay` to `delay + word.duration`.
+
+                                            const isWordSung = (effectivePosition > (word.time + word.duration));
+
                                             return (
                                                 <span
                                                     key={wIndex}
@@ -166,14 +180,20 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                     style={{
                                                         display: 'inline-block',
                                                         marginRight: '0.3em',
-                                                        animationName: isActive ? 'karaokeFill' : 'none',
-                                                        animationDuration: `${word.duration}s`,
-                                                        animationDelay: `${delay}s`,
-                                                        animationFillMode: 'forwards',
-                                                        animationTimingFunction: 'linear',
-                                                        // CRITICAL FIX: Make text transparent so background gradient shows through
+
+                                                        // Combined Animation: Fill + Pop
+                                                        // We can comma separate animations
+                                                        animationName: isActive ? 'karaokeFill, wordPop' : 'none',
+                                                        animationDuration: `${word.duration}s, ${word.duration}s`,
+                                                        animationDelay: `${delay}s, ${delay}s`,
+                                                        animationFillMode: 'forwards, none', // wordPop doesn't hold (returns to normal)
+                                                        animationTimingFunction: 'linear, ease-in-out',
+
+                                                        // Color Logic
                                                         color: isActive ? 'transparent' : 'white',
-                                                        opacity: isSung ? 0.5 : 1,
+                                                        opacity: isSung || isWordSung ? 1 : (isActive ? 1 : 0.5), // Future words dimmed
+
+                                                        // Gradient/Fill styles
                                                         backgroundClip: 'text',
                                                         WebkitBackgroundClip: 'text',
                                                         backgroundImage: isActive
@@ -181,6 +201,13 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                             : 'none',
                                                         backgroundSize: '200% 100%',
                                                         backgroundPosition: '100% 0',
+
+                                                        // Glow logic: "Only show on already sang words of the current line"
+                                                        // Reduced glow as requested
+                                                        textShadow: (isActive && isWordSung)
+                                                            ? '0 0 10px rgba(255, 255, 255, 0.4)' // Reduced glow
+                                                            : 'none',
+                                                        transition: 'opacity 0.2s ease, text-shadow 0.2s ease'
                                                     }}
                                                 >
                                                     {word.text}
