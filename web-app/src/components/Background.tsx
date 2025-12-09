@@ -15,9 +15,6 @@ uniform sampler2D BlurredCoverArt;
 uniform vec2 BackgroundCircleOrigin;
 uniform float BackgroundCircleRadius;
 
-uniform vec2 CenterCircleOrigin;
-uniform float CenterCircleRadius;
-
 uniform vec2 LeftCircleOrigin;
 uniform float LeftCircleRadius;
 
@@ -52,20 +49,8 @@ void main() {
     gl_FragColor.a = 1.0;
   }
 
-  vec2 CenterCircleOffset = (gl_FragCoord.xy - CenterCircleOrigin);
-  if (length(CenterCircleOffset) <= CenterCircleRadius) {
-    vec4 newColor = texture2D(
-      BlurredCoverArt,
-      RotateAroundCenter(
-        (((CenterCircleOffset / CenterCircleRadius) + 1.0) * 0.5),
-        (Time * 0.5)
-      )
-    );
-    newColor.a *= 0.75;
-
-    gl_FragColor.rgb = ((newColor.rgb * newColor.a) + (gl_FragColor.rgb * (1.0 - newColor.a)));
-    gl_FragColor.a = (newColor.a + (gl_FragColor.a * (1.0 - newColor.a)));
-  }
+  // CenterCircle removed to prevent dark overlap artifacts
+  // vec2 CenterCircleOffset = ... (removed)
 
   vec2 LeftCircleOffset = (gl_FragCoord.xy - LeftCircleOrigin);
   if (length(LeftCircleOffset) <= LeftCircleRadius) {
@@ -76,7 +61,7 @@ void main() {
         (Time * 1.0)
       )
     );
-    newColor.a *= 0.5;
+    newColor.a *= 0.4; // Reduced alpha from 0.5
 
     gl_FragColor.rgb = ((newColor.rgb * newColor.a) + (gl_FragColor.rgb * (1.0 - newColor.a)));
     gl_FragColor.a = (newColor.a + (gl_FragColor.a * (1.0 - newColor.a)));
@@ -91,7 +76,7 @@ void main() {
         (Time * -0.75)
       )
     );
-    newColor.a *= 0.5;
+    newColor.a *= 0.4; // Reduced alpha from 0.5
 
     gl_FragColor.rgb = ((newColor.rgb * newColor.a) + (gl_FragColor.rgb * (1.0 - newColor.a)));
     gl_FragColor.a = (newColor.a + (gl_FragColor.a * (1.0 - newColor.a)));
