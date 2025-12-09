@@ -110,20 +110,30 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                     <span
                                         className={`Vocals ${isActive ? 'Active' : ''}`}
                                         style={{
-                                            fontSize: '2rem',
+                                            fontSize: '3rem', // Bigger dots
                                             '--duration': `${duration}s`,
-                                            backgroundClip: 'text',
-                                            WebkitBackgroundClip: 'text',
-                                            backgroundImage: isActive
-                                                ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.5) 50%)`
-                                                : `linear-gradient(to right, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.3) 50%)`,
-                                            backgroundSize: '200% 100%',
-                                            backgroundPosition: isActive ? '0 0' : '100% 0',
-                                            animation: isActive ? `karaokeFill ${duration}s linear forwards` : 'none',
-                                            color: 'transparent'
+                                            // No gradient for dots, just color
+                                            color: 'white',
+                                            display: 'inline-flex',
+                                            gap: '1rem',
+                                            opacity: isSung ? 0.3 : 1
                                         } as React.CSSProperties}
                                     >
-                                        • • •
+                                        {[0, 1, 2].map((dot, dIndex) => (
+                                            <span
+                                                key={dIndex}
+                                                style={{
+                                                    display: 'inline-block',
+                                                    animationName: isActive ? 'dotPulse' : 'none',
+                                                    animationDuration: '2s', // Slow loop
+                                                    animationDelay: `${dIndex * 0.5}s`, // Staggered
+                                                    animationIterationCount: 'infinite',
+                                                    animationTimingFunction: 'ease-in-out'
+                                                }}
+                                            >
+                                                •
+                                            </span>
+                                        ))}
                                     </span>
                                 </div>
                             );
