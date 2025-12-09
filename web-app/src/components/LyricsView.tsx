@@ -24,7 +24,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
 
         // 1. Intro Gap Detection
         if (lyrics[0].time > GAP_THRESHOLD) {
-            result.push({ isGap: true, time: 2 } as any);
+            result.push({ isGap: true, time: 0.5 } as any); // Start almost immediately
         }
 
         for (let i = 0; i < lyrics.length; i++) {
@@ -32,16 +32,12 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
 
             // Check for gap
             if (i < lyrics.length - 1) {
-                const currentEnd = lyrics[i].time; // Actually start time of current
-                // Note: Standard LRC doesn't have end times, so we check diff between starts
-
+                const currentEnd = lyrics[i].time;
                 const nextStart = lyrics[i + 1].time;
 
-                // If there is a significant instrumental gap
-                // We assume line duration is roughy 3s if unknown, but here we just check start-to-start dist
                 if (nextStart - currentEnd > GAP_THRESHOLD + 3) {
                     // Approximate time for the dots to appear
-                    result.push({ isGap: true, time: currentEnd + 5 } as any);
+                    result.push({ isGap: true, time: currentEnd + 2 } as any);
                 }
             }
         }
@@ -83,28 +79,50 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                     </div>
                 ) : (
                     processedLyrics.map((line, index) => {
-                        // Check if it's a gap filler
+                        const isActive = index === activeLineIndex;
+                        const isSung = index < activeLineIndex;
+
+                        // Calculate duration regardless of line type
+                        const nextLineTime = processedLyrics[index + 1]?.time || (line.time + 5);
+                        const duration = Math.max(1, nextLineTime - line.time);
+
+                        // If GAP item:
                         if ('isGap' in line) {
                             return (
                                 <div
                                     key={`gap-${index}`}
-                                    className={`VocalsGroup ${index <= activeLineIndex ? 'Sung' : ''}`}
-                                    style={{ opacity: 0.3, fontSize: '2rem', margin: '2rem 0' }}
+                                    ref={isActive ? activeLineRef : null}
+                                    className={`VocalsGroup`} // removed sung check diff
+                                    style={{ margin: '2rem 0', opacity: isSung ? 0.3 : 1 }}
                                 >
-                                    {/* Added Start/End Dots animation class */}
-                                    <span className="Vocals Dots">• • •</span>
+                                    <span
+                                        className={`Vocals ${isActive ? 'Active' : ''}`}
+                                        style={{
+                                            // Apply filling animation to the WHOLE block of dots
+                                            fontSize: '2rem',
+                                            '--duration': `${duration}s`,
+
+                                            // Ensure the fill works like words
+                                            backgroundClip: 'text',
+                                            WebkitBackgroundClip: 'text',
+                                            backgroundImage: isActive
+                                                ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.5) 50%)`
+                                                : `linear-gradient(to right, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.3) 50%)`, // Idle state color
+                                            backgroundSize: '200% 100%',
+                                            backgroundPosition: isActive ? '0 0' : '100% 0',
+                                            // Use the global keyframe defined in SCSS
+                                            animation: isActive ? `karaokeFill ${duration}s linear forwards` : 'none',
+
+                                            color: 'transparent' // Important for background clip
+                                        } as React.CSSProperties}
+                                    >
+                                        • • •
+                                    </span>
                                 </div>
                             );
                         }
 
-                        const isActive = index === activeLineIndex;
-                        const isSung = index < activeLineIndex;
-
-                        const nextLineTime = processedLyrics[index + 1]?.time || (line.time + 3);
-                        const duration = Math.max(1, nextLineTime - line.time);
-
-                        // Simulated Word-by-Word Sync
-                        // Split line into words and distribute duration based on length
+                        // Normal Line Logic
                         const words = line.text.split(' ');
                         const totalChars = line.text.length;
                         let accumulatedDelay = 0;
@@ -118,8 +136,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                             >
                                 <span className={`Vocals ${isActive ? 'Active' : ''} ${isSung ? 'Sung' : ''}`}>
                                     {words.map((word, wIndex) => {
-                                        // Calculate roughly how much time this word takes
-                                        const wordDuration = (word.length / totalChars) * duration;
+                                        const wordDuration = (word.length / totalChars) * duration * 0.9; // 0.9 factor to finish slightly before next line
                                         const currentDelay = accumulatedDelay;
                                         accumulatedDelay += wordDuration;
 
@@ -135,11 +152,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                     animationDelay: `${currentDelay}s`,
                                                     animationFillMode: 'forwards',
                                                     animationTimingFunction: 'linear',
-                                                    // Base state (before animation)
                                                     color: isSung ? 'white' : 'inherit',
                                                     opacity: isSung ? 0.5 : 1,
-
-                                                    // We need to apply background clip to EACH WORD for this effect to work
                                                     backgroundClip: 'text',
                                                     WebkitBackgroundClip: 'text',
                                                     backgroundImage: isActive
