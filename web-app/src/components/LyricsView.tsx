@@ -119,7 +119,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                             opacity: isSung ? 0.3 : 1
                                         } as React.CSSProperties}
                                     >
-                                        {[0, 1, 2].map((dot, dIndex) => (
+                                        {[0, 1, 2].map((_, dIndex) => (
                                             <span
                                                 key={dIndex}
                                                 style={{
