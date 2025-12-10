@@ -157,24 +157,49 @@ body.is-tv {
 }
 
 @keyframes charShake {
-
-    0%,
-    100% {
-        transform: translateX(0) rotate(0deg);
+    0% {
+        transform: translateY(0em) rotate(0deg);
     }
 
     25% {
-        transform: translateX(-2px) rotate(-2deg);
+        transform: translateY(-0.02em) rotate(1deg);
     }
 
     50% {
-        transform: translateX(2px) rotate(2deg);
+        transform: translateY(0.02em) rotate(-1deg);
     }
 
     75% {
-        transform: translateX(-1px) rotate(-1deg);
+        transform: translateY(-0.02em) rotate(0.5deg);
+    }
+
+    100% {
+        transform: translateY(0em) rotate(0deg);
     }
 }
+
+@keyframes wordShake {
+    0% {
+        transform: scale(var(--pop-scale, 1.05)) translateY(0);
+    }
+
+    25% {
+        transform: scale(calc(var(--pop-scale, 1.05) + 0.01)) translateY(-0.01em);
+    }
+
+    50% {
+        transform: scale(var(--pop-scale, 1.05)) translateY(0.01em);
+    }
+
+    75% {
+        transform: scale(calc(var(--pop-scale, 1.05) + 0.01)) translateY(-0.01em);
+    }
+
+    100% {
+        transform: scale(var(--pop-scale, 1.05)) translateY(0);
+    }
+}
+
 
 @keyframes dotFill {
     from {

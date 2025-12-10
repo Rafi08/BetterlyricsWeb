@@ -239,6 +239,10 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                             const sylEpicScale = 1 + (0.05 * sylEpicFactor);
                                                             const sylEpicY = -0.1 * sylEpicFactor;
 
+                                                            const shouldShake = syl.duration > 0.6;
+                                                            const shakeAnimation = shouldShake ? ', wordShake' : '';
+                                                            const shakeDuration = shouldShake ? `, ${syl.duration}s` : '';
+
                                                             return (
                                                                 <span
                                                                     key={sIndex}
@@ -246,11 +250,13 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                         display: 'inline-block',
                                                                         '--pop-scale': sylEpicScale,
                                                                         '--pop-y': `${sylEpicY}em`,
-                                                                        animationName: isActive ? 'karaokeFill, wordPop' : 'none',
-                                                                        animationDuration: `${syl.duration}s, ${syl.duration + 0.8}s`,
-                                                                        animationDelay: `${sylDelay}s, ${sylDelay}s`,
-                                                                        animationFillMode: 'forwards, none',
-                                                                        animationTimingFunction: 'linear, ease-out',
+                                                                        animationName: isActive ? `karaokeFill, wordPop${shakeAnimation}` : 'none',
+                                                                        animationDuration: `${syl.duration}s, ${syl.duration + 0.8}s${shakeDuration}`,
+                                                                        animationDelay: `${sylDelay}s, ${sylDelay}s${shouldShake ? `, ${sylDelay}s` : ''}`,
+                                                                        animationFillMode: 'forwards, none, none',
+                                                                        animationTimingFunction: 'linear, ease-out, ease-in-out',
+                                                                        animationIterationCount: '1, 1, infinite',
+
                                                                         color: isActive ? 'transparent' : (isSylSung ? 'white' : 'rgba(255,255,255,0.5)'),
                                                                         opacity: isSylSung ? 1 : (isActive ? 1 : 0.5),
                                                                         backgroundClip: 'text',
@@ -263,7 +269,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                         textShadow: isSylSung
                                                                             ? `0 0 ${epicGlow}px rgba(255, 255, 255, 0.6)`
                                                                             : 'none',
-                                                                        transition: 'text-shadow 0.5s ease'
+                                                                        transition: 'text-shadow 0.8s ease, color 0.8s ease, opacity 0.8s ease, transform 0.8s ease'
                                                                     } as React.CSSProperties}
                                                                 >
                                                                     {syl.text}
@@ -277,11 +283,13 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                 display: 'inline-block',
                                                                 '--pop-scale': epicScale,
                                                                 '--pop-y': `${epicY}em`,
-                                                                animationName: isActive ? 'karaokeFill, wordPop' : 'none',
-                                                                animationDuration: `${word.duration}s, ${word.duration + 0.8}s`,
-                                                                animationDelay: `${delay}s, ${delay}s`,
-                                                                animationFillMode: 'forwards, none',
-                                                                animationTimingFunction: 'linear, ease-out',
+                                                                animationName: isActive ? (isLongWord ? 'karaokeFill, wordPop, wordShake' : 'karaokeFill, wordPop') : 'none',
+                                                                animationDuration: `${word.duration}s, ${word.duration + 0.8}s${isLongWord ? `, ${word.duration}s` : ''}`,
+                                                                animationDelay: `${delay}s, ${delay}s${isLongWord ? `, ${delay}s` : ''}`,
+                                                                animationFillMode: 'forwards, none, none',
+                                                                animationTimingFunction: 'linear, ease-out, ease-in-out',
+                                                                animationIterationCount: '1, 1, infinite',
+
                                                                 color: isActive ? 'transparent' : (isWordSung ? 'white' : 'rgba(255,255,255,0.5)'),
                                                                 opacity: isWordSung ? 1 : (isActive ? 1 : 0.5),
                                                                 backgroundClip: 'text',
@@ -294,25 +302,26 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                 textShadow: isWordSung
                                                                     ? `0 0 ${epicGlow}px rgba(255, 255, 255, 0.6)`
                                                                     : 'none',
-                                                                transition: 'text-shadow 0.5s ease'
+                                                                transition: 'text-shadow 0.8s ease, color 0.8s ease, opacity 0.8s ease, transform 0.8s ease'
                                                             } as React.CSSProperties}
                                                         >
                                                             {isLongWord && isWordActive ? chars!.map((char, cIndex) => {
                                                                 const charDuration = word.duration / chars!.length;
                                                                 const charDelay = cIndex * charDuration * 0.6;
                                                                 const wordProgress = (position / 1000 - word.time) / word.duration;
-                                                                const isNearEnd = wordProgress > 0.7;
+                                                                // Shake trigger earlier
+                                                                const isNearEnd = wordProgress > 0.4;
 
                                                                 return (
                                                                     <span key={cIndex} style={{
                                                                         display: 'inline-block',
                                                                         animationName: isNearEnd ? 'wordPop, charShake' : 'wordPop',
                                                                         animationDuration: isNearEnd
-                                                                            ? `${charDuration + 0.4}s, 0.15s`
+                                                                            ? `${charDuration + 0.4}s, 0.3s`
                                                                             : `${charDuration + 0.4}s`,
                                                                         animationDelay: `${charDelay}s`,
                                                                         animationFillMode: 'none',
-                                                                        animationTimingFunction: 'ease-out',
+                                                                        animationTimingFunction: 'ease-out, ease-in-out',
                                                                         animationIterationCount: isNearEnd ? '1, infinite' : '1',
                                                                         background: 'transparent'
                                                                     }}>
