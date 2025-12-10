@@ -219,17 +219,15 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                         color: isActive ? 'transparent' : (isWordSung ? 'white' : 'rgba(255,255,255,0.5)'),
                                                         opacity: isWordSung ? 1 : (isActive ? 1 : 0.5),
 
-                                                        // Gradient/Fill styles - white sweeps left-to-right
+                                                        // Gradient/Fill styles - karaoke sweep left-to-right
                                                         backgroundClip: 'text',
                                                         WebkitBackgroundClip: 'text',
-                                                        // Gradient: dimmed(left) → white(right), 200% wide
-                                                        // Animation moves from showing right half (white) to left half (dimmed)
-                                                        // So we reverse: white on left, dimmed on right
+                                                        // White on left half, dimmed on right half
+                                                        // Animation goes 100%→0%, revealing white from left to right
                                                         backgroundImage: isActive
-                                                            ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.4) 50%)`
+                                                            ? `linear-gradient(to right, white 50%, rgba(255,255,255,0.35) 50%)`
                                                             : 'none',
                                                         backgroundSize: '200% 100%',
-                                                        // Start at right (showing dimmed right half), animate to left (showing white left half)
                                                         backgroundPosition: '100% 0',
 
                                                         // Epic glow on sung words - intensity based on duration
