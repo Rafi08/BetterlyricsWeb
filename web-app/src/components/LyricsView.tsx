@@ -219,13 +219,17 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                         color: isActive ? 'transparent' : (isWordSung ? 'white' : 'rgba(255,255,255,0.5)'),
                                                         opacity: isWordSung ? 1 : (isActive ? 1 : 0.5),
 
-                                                        // Gradient/Fill styles - always set when line active
+                                                        // Gradient/Fill styles - white sweeps left-to-right
                                                         backgroundClip: 'text',
                                                         WebkitBackgroundClip: 'text',
+                                                        // Gradient: dimmed(left) → white(right), 200% wide
+                                                        // Animation moves from showing right half (white) to left half (dimmed)
+                                                        // So we reverse: white on left, dimmed on right
                                                         backgroundImage: isActive
-                                                            ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.5) 50%)`
-                                                            : (isWordSung ? 'none' : 'none'),
+                                                            ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.4) 50%)`
+                                                            : 'none',
                                                         backgroundSize: '200% 100%',
+                                                        // Start at right (showing dimmed right half), animate to left (showing white left half)
                                                         backgroundPosition: '100% 0',
 
                                                         // Epic glow on sung words - intensity based on duration

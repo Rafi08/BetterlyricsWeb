@@ -65,9 +65,7 @@
         opacity: var(--vocal-active-opacity);
         filter: blur(0);
         transform: scale(1.02);
-
-        /* Make active line pop */
-        color: white;
+        /* color controlled by inline styles for karaoke effect */
     }
 
     &.Sung {
