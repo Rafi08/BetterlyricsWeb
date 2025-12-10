@@ -1,8 +1,8 @@
 .LyricsScrollContainer {
     height: 100vh;
     overflow-y: auto;
-    padding: 0 4rem 0 2rem;
-    /* Added right padding to prevent cutoff */
+    /* Dynamic padding: min 1rem, max 8rem based on viewport width */
+    padding: 0 clamp(2rem, 8vw, 8rem) 0 clamp(1rem, 4vw, 4rem);
     scrollbar-width: none;
 
     /* Fade Effect */
@@ -27,7 +27,8 @@
     --vocal-active-opacity: 1;
     --vocal-sung-opacity: 0.5;
 
-    --lyrics-size: 3rem;
+    /* Dynamic font size: scales from 2.5rem to 4.5rem */
+    --lyrics-size: clamp(2.5rem, 3.5vw, 4.5rem);
     /* Slightly larger as requested "beautiful lyrics style" */
     font-weight: 700;
     transition: all 0.5s ease;
@@ -36,6 +37,19 @@
     word-wrap: break-word;
     overflow-wrap: break-word;
     max-width: 100%;
+}
+
+/* TV Support Overrides */
+body.is-tv {
+    .Lyrics {
+        /* Tizen/WebOS often struggle with custom fonts or heavy weights */
+        font-family: "Tizen", "SamsungOne", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+        /* Reduce weight slightly as TV rendering can be thick */
+        font-weight: 600;
+
+        /* Ensure readable size without complex clamp if needed, but clamp usually works */
+        /* Fallback for very old browsers could be added here if needed */
+    }
 }
 
 .VocalsGroup {
