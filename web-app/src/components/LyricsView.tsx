@@ -215,24 +215,24 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                         animationFillMode: 'forwards, none',
                                                         animationTimingFunction: 'linear, ease-out',
 
-                                                        // Color Logic - visual feedback based on word state
-                                                        color: (isWordActive || isWordSung) ? 'transparent' : 'white',
-                                                        opacity: isWordSung ? 1 : (isWordActive ? 1 : (isSung ? 0.8 : 0.5)),
+                                                        // Color Logic - transparent when line active so gradient shows
+                                                        color: isActive ? 'transparent' : (isWordSung ? 'white' : 'rgba(255,255,255,0.5)'),
+                                                        opacity: isWordSung ? 1 : (isActive ? 1 : 0.5),
 
-                                                        // Gradient/Fill styles
+                                                        // Gradient/Fill styles - always set when line active
                                                         backgroundClip: 'text',
                                                         WebkitBackgroundClip: 'text',
-                                                        backgroundImage: (isActive || isWordSung)
+                                                        backgroundImage: isActive
                                                             ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.5) 50%)`
-                                                            : 'none',
+                                                            : (isWordSung ? 'none' : 'none'),
                                                         backgroundSize: '200% 100%',
-                                                        backgroundPosition: isWordSung ? '0 0' : '100% 0',
+                                                        backgroundPosition: '100% 0',
 
                                                         // Epic glow on sung words - intensity based on duration
                                                         textShadow: isWordSung
                                                             ? `0 0 ${epicGlow}px rgba(255, 255, 255, 0.6)`
                                                             : 'none',
-                                                        transition: 'opacity 0.3s ease, text-shadow 0.5s ease'
+                                                        transition: 'text-shadow 0.5s ease'
                                                     } as React.CSSProperties}
                                                 >
                                                     {isLongWord && isWordActive ? chars!.map((char, cIndex) => {
