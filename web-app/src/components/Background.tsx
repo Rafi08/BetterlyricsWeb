@@ -207,8 +207,8 @@ const Background: React.FC<BackgroundProps> = ({ coverArt }) => {
         left: 0,
         width: '100%',
         height: '100%',
-        backdropFilter: 'blur(100px) brightness(0.6) saturate(1.4)', // Heavy blur + darken + saturate
-        WebkitBackdropFilter: 'blur(100px) brightness(0.6) saturate(1.4)', // Safari support
+        backdropFilter: 'blur(100px) brightness(0.6) saturate(1.5)', // Heavy blur + darken + saturate
+        WebkitBackdropFilter: 'blur(100px) brightness(0.6) saturate(1.5)', // Safari support
         zIndex: 1
       }} />
     </div>
