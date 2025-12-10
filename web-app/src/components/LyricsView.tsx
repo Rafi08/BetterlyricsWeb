@@ -268,7 +268,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                 <span className={`Vocals Active`}>
                                     {line.words.map((word, wIndex) => {
                                         const delay = Math.max(0, word.time - line.time);
-                                        // FIX: Use >= to prevent 1-frame gap
+                                        // Inclusive check for sung state
                                         const isWordSung = effectivePosition >= (word.time + word.duration);
                                         const isWordActive = effectivePosition >= word.time && effectivePosition < (word.time + word.duration);
 
@@ -292,7 +292,6 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                 {hasSyllables ? (
                                                     word.syllables!.map((syl, sIndex) => {
                                                         const sylDelay = Math.max(0, syl.time - line.time);
-                                                        // FIX: Use >= to prevent 1-frame gap
                                                         const isSylSung = effectivePosition >= (syl.time + syl.duration);
                                                         const isSylActive = effectivePosition >= syl.time && effectivePosition < (syl.time + syl.duration);
 
@@ -337,7 +336,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                         backgroundSize: '200% 100%',
                                                                         animationName: 'karaokeFill',
                                                                         animationDuration: `${syl.duration}s`,
-                                                                        animationDelay: `${sylDelay}s`,
+                                                                        animationDelay: '0s', // MOUNTED WHEN ACTIVE, NO DELAY
                                                                         animationFillMode: 'forwards',
                                                                         animationTimingFunction: 'linear',
                                                                         filter: `drop-shadow(0 0 ${epicGlow}px white)`,
@@ -397,7 +396,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                 backgroundSize: '200% 100%',
                                                                 animationName: 'karaokeFill',
                                                                 animationDuration: `${word.duration}s`,
-                                                                animationDelay: `${delay}s`,
+                                                                animationDelay: '0s', // MOUNTED WHEN ACTIVE, NO DELAY
                                                                 animationFillMode: 'forwards',
                                                                 animationTimingFunction: 'linear',
                                                                 filter: `drop-shadow(0 0 ${epicGlow}px white)`,
