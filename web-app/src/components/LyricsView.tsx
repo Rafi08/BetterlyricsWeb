@@ -112,28 +112,41 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                         style={{
                                             fontSize: '3rem', // Bigger dots
                                             '--duration': `${duration}s`,
-                                            // No gradient for dots, just color
-                                            color: 'white',
                                             display: 'inline-flex',
                                             gap: '1rem',
                                             opacity: isSung ? 0.3 : 1
                                         } as React.CSSProperties}
                                     >
-                                        {[0, 1, 2].map((_, dIndex) => (
-                                            <span
-                                                key={dIndex}
-                                                style={{
-                                                    display: 'inline-block',
-                                                    animationName: isActive ? 'dotPulse' : 'none',
-                                                    animationDuration: '2s', // Slow loop
-                                                    animationDelay: `${dIndex * 0.5}s`, // Staggered
-                                                    animationIterationCount: 'infinite',
-                                                    animationTimingFunction: 'ease-in-out'
-                                                }}
-                                            >
-                                                •
-                                            </span>
-                                        ))}
+                                        {[0, 1, 2].map((_, dIndex) => {
+                                            // Each dot fills during 1/3 of the gap duration
+                                            const dotDuration = duration / 3;
+                                            const dotDelay = dIndex * dotDuration;
+
+                                            return (
+                                                <span
+                                                    key={dIndex}
+                                                    style={{
+                                                        display: 'inline-block',
+                                                        // Combined: pulse + fill
+                                                        animationName: isActive ? 'dotPulse, dotFill' : 'none',
+                                                        animationDuration: isActive ? `1.5s, ${dotDuration}s` : '0s',
+                                                        animationDelay: `${dIndex * 0.3}s, ${dotDelay}s`,
+                                                        animationIterationCount: 'infinite, 1',
+                                                        animationTimingFunction: 'ease-in-out, linear',
+                                                        animationFillMode: 'none, forwards',
+                                                        // Gradient for fill effect
+                                                        color: 'transparent',
+                                                        backgroundClip: 'text',
+                                                        WebkitBackgroundClip: 'text',
+                                                        backgroundImage: `linear-gradient(to right, white 50%, rgba(255,255,255,0.3) 50%)`,
+                                                        backgroundSize: '200% 100%',
+                                                        backgroundPosition: '100% 0'
+                                                    } as React.CSSProperties}
+                                                >
+                                                    •
+                                                </span>
+                                            );
+                                        })}
                                     </span>
                                 </div>
                             );
@@ -240,15 +253,22 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                     {isLongWord && isWordActive ? chars!.map((char, cIndex) => {
                                                         const charDuration = word.duration / chars!.length;
                                                         const charDelay = cIndex * charDuration * 0.6;
+                                                        // Calculate if we're near end of word (last 30%)
+                                                        const wordProgress = (position / 1000 - word.time) / word.duration;
+                                                        const isNearEnd = wordProgress > 0.7;
 
                                                         return (
                                                             <span key={cIndex} style={{
                                                                 display: 'inline-block',
-                                                                animationName: 'wordPop',
-                                                                animationDuration: `${charDuration + 0.4}s`,
+                                                                // Combine pop + shake at end
+                                                                animationName: isNearEnd ? 'wordPop, charShake' : 'wordPop',
+                                                                animationDuration: isNearEnd
+                                                                    ? `${charDuration + 0.4}s, 0.15s`
+                                                                    : `${charDuration + 0.4}s`,
                                                                 animationDelay: `${charDelay}s`,
                                                                 animationFillMode: 'none',
                                                                 animationTimingFunction: 'ease-out',
+                                                                animationIterationCount: isNearEnd ? '1, infinite' : '1',
                                                                 background: 'transparent'
                                                             }}>
                                                                 {char}
@@ -270,17 +290,14 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                 key={`bg-${bgIndex}`}
                                                 className={`Vocals ${bgIsActive ? 'Active' : ''}`}
                                                 style={{
-                                                    fontSize: '100%',
-                                                    fontWeight: 500,
-                                                    opacity: 0.8,
+                                                    fontSize: '90%',
+                                                    fontWeight: 600,
+                                                    opacity: 0.9,
                                                     alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start'
                                                 }}
                                             >
                                                 {bgLine.words?.map((word, wIndex) => {
                                                     const wordDelay = Math.max(0, word.time - bgLine.time);
-                                                    const wordActive = bgIsActive &&
-                                                        position >= word.time * 1000 &&
-                                                        position < (word.time + word.duration) * 1000;
                                                     const wordSung = position >= (word.time + word.duration) * 1000;
 
                                                     return (
@@ -290,23 +307,24 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                             style={{
                                                                 display: 'inline-block',
                                                                 marginRight: '0.3em',
-                                                                // Combined animation: karaokeFill + wordPop
-                                                                animationName: wordActive ? 'karaokeFill, wordPop' : 'none',
-                                                                animationDuration: `${word.duration}s, ${word.duration + 0.4}s`,
+                                                                // Animation triggers on line active with word delay
+                                                                animationName: bgIsActive ? 'karaokeFill, wordPop' : 'none',
+                                                                animationDuration: `${word.duration}s, ${word.duration + 0.5}s`,
                                                                 animationDelay: `${wordDelay}s, ${wordDelay}s`,
                                                                 animationFillMode: 'forwards, none',
                                                                 animationTimingFunction: 'linear, ease-out',
-                                                                color: wordActive ? 'transparent' : 'white',
-                                                                opacity: wordSung ? 1 : (wordActive ? 1 : 0.5),
+                                                                // Transparent when line active so gradient shows
+                                                                color: bgIsActive ? 'transparent' : (wordSung ? 'white' : 'rgba(255,255,255,0.5)'),
+                                                                opacity: wordSung ? 1 : (bgIsActive ? 1 : 0.5),
                                                                 backgroundClip: 'text',
                                                                 WebkitBackgroundClip: 'text',
-                                                                backgroundImage: wordActive
-                                                                    ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.5) 50%)`
+                                                                backgroundImage: bgIsActive
+                                                                    ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.35) 50%)`
                                                                     : 'none',
                                                                 backgroundSize: '200% 100%',
                                                                 backgroundPosition: '100% 0',
-                                                                textShadow: wordSung ? '0 0 8px rgba(255,255,255,0.3)' : 'none',
-                                                                transition: 'opacity 0.3s ease, text-shadow 0.3s ease'
+                                                                textShadow: wordSung ? '0 0 10px rgba(255,255,255,0.4)' : 'none',
+                                                                transition: 'text-shadow 0.4s ease'
                                                             } as React.CSSProperties}
                                                         >
                                                             {word.text}
