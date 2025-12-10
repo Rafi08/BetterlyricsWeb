@@ -145,9 +145,55 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                         const isActive = effectivePosition >= lineStartTime && effectivePosition < lineEndTime;
                         const isSung = effectivePosition >= lineEndTime;
 
-                        // Fallback logic check
+                        // OPTIMIZATION: If line is not active, render simpler version
+                        if (!isActive) {
+                            // Separate handling for Fallback (no words) vs Normal to show correct text
+                            const displayWords = (line.words && line.words.length > 0)
+                                ? line.words.map(w => w.text)
+                                : line.text.split(' ');
+
+                            return (
+                                <div
+                                    key={index}
+                                    className="VocalsGroup"
+                                    onClick={() => seek && seek(line.time * 1000)}
+                                    style={{
+                                        textAlign: line.oppositeAligned ? 'right' : 'left',
+                                        alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start',
+                                        maxWidth: '70%',
+                                        width: 'fit-content',
+                                        opacity: isSung ? 0.5 : 1 // Sung lines dim
+                                    }}
+                                >
+                                    <span className={`Vocals ${isSung ? 'Sung' : ''}`}>
+                                        {displayWords.map((txt, wIndex) => (
+                                            <span
+                                                key={wIndex}
+                                                className="Word"
+                                                style={{
+                                                    display: 'inline-block',
+                                                    marginRight: '0.3em',
+                                                    color: isSung ? 'white' : 'white', // Base text color
+                                                    opacity: isSung ? 1 : 0.5 // Inactive opacity
+                                                }}
+                                            >
+                                                {txt}
+                                            </span>
+                                        ))}
+                                    </span>
+                                    {/* Render simplified BG vocals if present */}
+                                    {line.backgroundLines && line.backgroundLines.map((bgLine, bgIndex) => (
+                                        <span key={`bg-${bgIndex}`} style={{ display: 'inline-block', fontSize: '2.4rem', opacity: 0.5, marginLeft: '1rem' }}>
+                                            {bgLine.text}
+                                        </span>
+                                    ))}
+                                </div>
+                            )
+                        }
+
+                        // ACTIVE LINE RENDER LOOP (Full Detail)
                         if (!line.words || line.words.length === 0) {
-                            // Simulated sync fallback (simplified)
+                            // Active Fallback (Simulated)
                             const words = line.text.split(' ');
                             const totalChars = line.text.length;
                             const lineDur = Math.max(1, lineEndTime - lineStartTime);
@@ -156,7 +202,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                             return (
                                 <div
                                     key={index}
-                                    ref={isActive ? activeLineRef : null}
+                                    ref={activeLineRef}
                                     className={`VocalsGroup`}
                                     onClick={() => seek && seek(line.time * 1000)}
                                     style={{
@@ -166,7 +212,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                         width: 'fit-content'
                                     }}
                                 >
-                                    <span className={`Vocals ${isActive ? 'Active' : ''} ${isSung ? 'Sung' : ''}`}>
+                                    <span className={`Vocals Active`}>
                                         {words.map((word, wIndex) => {
                                             const wordDuration = (word.length / totalChars) * lineDur * 0.9;
                                             const currentDelay = accumulatedDelay;
@@ -179,19 +225,15 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                     style={{
                                                         display: 'inline-block',
                                                         marginRight: '0.3em',
-                                                        // Fallback uses simple gradient fill
-                                                        animationName: isActive ? 'karaokeFill' : 'none',
+                                                        animationName: 'karaokeFill', // Simple fill for fallback
                                                         animationDuration: `${wordDuration}s`,
                                                         animationDelay: `${currentDelay}s`,
                                                         animationFillMode: 'forwards',
                                                         animationTimingFunction: 'linear',
-                                                        color: isSung ? 'white' : 'inherit',
-                                                        opacity: isSung ? 0.5 : 1,
+                                                        color: 'rgba(255,255,255,0.5)', // Base
                                                         backgroundClip: 'text',
                                                         WebkitBackgroundClip: 'text',
-                                                        backgroundImage: isActive
-                                                            ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.5) 50%)`
-                                                            : 'none',
+                                                        backgroundImage: `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.5) 50%)`,
                                                         backgroundSize: '200% 100%',
                                                         backgroundPosition: '100% 0'
                                                     }}
@@ -205,10 +247,11 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                             );
                         }
 
+                        // Active Real Lyrics
                         return (
                             <div
                                 key={index}
-                                ref={isActive ? activeLineRef : null}
+                                ref={activeLineRef}
                                 className={`VocalsGroup`}
                                 onClick={() => seek && seek(line.time * 1000)}
                                 style={{
@@ -218,10 +261,11 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                     width: 'fit-content',
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    gap: '0.25rem'
+                                    gap: '0.25rem',
+                                    willChange: 'transform, opacity' // Hint for compositing
                                 }}
                             >
-                                <span className={`Vocals ${isActive ? 'Active' : ''} ${isSung ? 'Sung' : ''}`}>
+                                <span className={`Vocals Active`}>
                                     {line.words.map((word, wIndex) => {
                                         const delay = Math.max(0, word.time - line.time);
                                         const isWordSung = effectivePosition > (word.time + word.duration);
@@ -262,26 +306,24 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                     position: 'relative',
                                                                     '--pop-scale': sylEpicScale,
                                                                     '--pop-y': `${sylEpicY}em`,
-                                                                    // Pop animation on CONTAINER
-                                                                    animationName: isActive ? 'wordPop' : 'none',
+                                                                    animationName: 'wordPop',
                                                                     animationDuration: `${syl.duration + 0.8}s`,
                                                                     animationDelay: `${sylDelay}s`,
                                                                     animationFillMode: 'none',
                                                                     animationTimingFunction: 'ease-out',
                                                                 } as React.CSSProperties}
                                                             >
-                                                                {/* Backing Layer (Grey/Inactive) */}
+                                                                {/* Backing Layer */}
                                                                 <span style={{
                                                                     color: isSylSung ? 'white' : 'rgba(255,255,255,0.5)',
-                                                                    opacity: isSylSung ? 1 : (isActive ? 1 : 0.5),
-                                                                    transition: 'color 0.3s, opacity 0.3s'
+                                                                    opacity: isSylSung ? 1 : (isSylActive ? 1 : 0.5),
+                                                                    transition: 'color 0.1s' // Faster transition
                                                                 }}>
                                                                     {syl.text}
                                                                 </span>
 
-                                                                {/* Overlay Layer (Active White + Glow + Fill) */}
-                                                                {/* Only render if line is active to save resources, or always render and control opacity? */}
-                                                                {isActive && !isSylSung && (
+                                                                {/* Overlay Layer (Heavy Effect) */}
+                                                                {isSylActive && !isSylSung && (
                                                                     <span style={{
                                                                         position: 'absolute',
                                                                         top: 0,
@@ -289,24 +331,19 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                         color: 'transparent',
                                                                         backgroundClip: 'text',
                                                                         WebkitBackgroundClip: 'text',
-                                                                        // Hard stop gradient: White then Transparent
                                                                         backgroundImage: `linear-gradient(to right, white 50%, transparent 50%)`,
                                                                         backgroundSize: '200% 100%',
-                                                                        // Fill animation
                                                                         animationName: 'karaokeFill',
                                                                         animationDuration: `${syl.duration}s`,
                                                                         animationDelay: `${sylDelay}s`,
                                                                         animationFillMode: 'forwards',
                                                                         animationTimingFunction: 'linear',
-                                                                        // Apply Drop Shadow logic
                                                                         filter: `drop-shadow(0 0 ${epicGlow}px white)`,
-                                                                        // Hide if not strictly active (though mapped by line active)
-                                                                        opacity: isSylActive ? 1 : 0
+                                                                        willChange: 'background-position'
                                                                     }}>
                                                                         {syl.text}
                                                                     </span>
                                                                 )}
-                                                                {/* Sung State Glow (simple text-shadow on container/backing? No, on backing) */}
                                                                 {isSylSung && (
                                                                     <span style={{
                                                                         position: 'absolute',
@@ -331,24 +368,22 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                             position: 'relative',
                                                             '--pop-scale': epicScale,
                                                             '--pop-y': `${epicY}em`,
-                                                            animationName: isActive ? 'wordPop' : 'none',
+                                                            animationName: 'wordPop',
                                                             animationDuration: `${word.duration + 0.8}s`,
                                                             animationDelay: `${delay}s`,
                                                             animationFillMode: 'none',
                                                             animationTimingFunction: 'ease-out',
                                                         } as React.CSSProperties}
                                                     >
-                                                        {/* Backing */}
                                                         <span style={{
                                                             color: isWordSung ? 'white' : 'rgba(255,255,255,0.5)',
-                                                            opacity: isWordSung ? 1 : (isActive ? 1 : 0.5),
-                                                            transition: 'color 0.3s, opacity 0.3s'
+                                                            opacity: isWordSung ? 1 : 0.5,
+                                                            transition: 'color 0.1s'
                                                         }}>
                                                             {word.text}
                                                         </span>
 
-                                                        {/* Overlay Active */}
-                                                        {isActive && !isWordSung && (
+                                                        {isWordActive && !isWordSung && (
                                                             <span style={{
                                                                 position: 'absolute',
                                                                 top: 0,
@@ -364,7 +399,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                 animationFillMode: 'forwards',
                                                                 animationTimingFunction: 'linear',
                                                                 filter: `drop-shadow(0 0 ${epicGlow}px white)`,
-                                                                opacity: isWordActive ? 1 : 0
+                                                                willChange: 'background-position'
+
                                                             }}>
                                                                 {word.text}
                                                             </span>
@@ -389,8 +425,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                     })}
                                 </span>
 
-                                {/* Background Vocals (Simplified for now, staying as is or updating?) */}
-                                {/* Keeping existing logic for BG vocals to minimize risk, they usually don't need the precise glow */}
+                                {/* Full Background Vocals for active line */}
                                 {line.backgroundLines && line.backgroundLines.map((bgLine, bgIndex) => {
                                     const lastBgWord = bgLine.words?.[bgLine.words.length - 1];
                                     const bgEndTime = lastBgWord ? (lastBgWord.time + lastBgWord.duration) : (bgLine.time + 3);
