@@ -284,15 +284,22 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                     {line.backgroundLines && line.backgroundLines.map((bgLine, bgIndex) => {
                                         const bgIsActive = position >= bgLine.time * 1000 &&
                                             position < (bgLine.time + (bgLine.words?.[bgLine.words.length - 1]?.time || 0) + (bgLine.words?.[bgLine.words.length - 1]?.duration || 2)) * 1000;
+                                        const bgIsSung = position >= (bgLine.time + (bgLine.words?.[bgLine.words.length - 1]?.time || 0) + (bgLine.words?.[bgLine.words.length - 1]?.duration || 2)) * 1000;
 
                                         return (
                                             <span
                                                 key={`bg-${bgIndex}`}
-                                                className={`Vocals ${bgIsActive ? 'Active' : ''}`}
+                                                // No Vocals class to avoid CSS conflicts
                                                 style={{
-                                                    fontSize: '90%',
-                                                    fontWeight: 600,
-                                                    opacity: 0.9,
+                                                    display: 'inline-block',
+                                                    // 80% of main size (3rem * 0.8 = 2.4rem)
+                                                    fontSize: '2.4rem',
+                                                    fontWeight: 500,
+                                                    opacity: bgIsActive ? 1 : (bgIsSung ? 0.7 : 0.5),
+                                                    filter: bgIsActive ? 'blur(0)' : 'blur(0.5px)',
+                                                    transform: bgIsActive ? 'scale(1.02)' : 'scale(0.98)',
+                                                    transformOrigin: 'left center',
+                                                    transition: 'opacity 0.5s ease, transform 0.5s ease, filter 0.4s ease',
                                                     alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start'
                                                 }}
                                             >

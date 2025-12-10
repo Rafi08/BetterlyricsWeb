@@ -183,9 +183,25 @@ export const SpicyLyricsService = {
         if (data.Content) {
             for (const content of data.Content) {
                 if (content.Type === 'Vocal') {
+                    const startTime = content.StartTime ?? 0;
+                    const endTime = content.EndTime ?? (startTime + 2);
+                    const text = content.Text ?? "";
+                    const lineDuration = endTime - startTime;
+
+                    // Simulate word sync: split text into words and distribute time evenly
+                    const wordTexts = text.split(' ').filter((w: string) => w.length > 0);
+                    const wordDuration = lineDuration / wordTexts.length;
+                    const words: LyricWord[] = wordTexts.map((wordText: string, idx: number) => ({
+                        text: wordText,
+                        time: startTime + (idx * wordDuration),
+                        duration: wordDuration * 0.9 // Slight gap between words
+                    }));
+
                     lines.push({
-                        time: content.Lead?.StartTime ?? 0,
-                        text: content.Text ?? "",
+                        time: startTime,
+                        text: text,
+                        words: words,
+                        oppositeAligned: content.OppositeAligned === true
                     });
                 }
             }
