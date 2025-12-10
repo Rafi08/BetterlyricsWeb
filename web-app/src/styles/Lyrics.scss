@@ -53,7 +53,7 @@
     font-size: var(--lyrics-size);
     color: white;
     opacity: var(--vocal-idle-opacity);
-    transition: opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease;
+    transition: opacity 0.5s ease, transform 0.5s ease, filter 0.4s ease, text-shadow 0.4s ease;
     filter: blur(1px);
     transform: scale(0.98);
     transform-origin: left center;
@@ -64,19 +64,18 @@
     &.Active {
         opacity: var(--vocal-active-opacity);
         filter: blur(0);
-        transform: scale(1.05);
+        transform: scale(1.02);
 
         /* Make active line pop */
         color: white;
-
-        /* User Request: Text Glow - REMOVED from line level, moved to word level */
-        /* text-shadow: 0 0 15px rgba(255, 255, 255, 0.6), 0 0 30px rgba(255, 255, 255, 0.4); */
     }
 
     &.Sung {
-        opacity: var(--vocal-sung-opacity);
-        filter: blur(0.5px);
+        opacity: 0.7;
+        filter: blur(0);
         color: white;
+        transform: scale(1);
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
     }
 }
 

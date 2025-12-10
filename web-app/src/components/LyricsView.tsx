@@ -187,9 +187,13 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                             const popScale = 1 + (0.05 * durationFactor); // Max 1.05
                                             const popY = -0.1 * durationFactor; // Max -0.1em
 
-                                            // CHAR SPLIT LOGIC
-                                            const isLongWord = word.duration > 0.5;
+                                            // CHAR SPLIT LOGIC - only for truly long words (>1s)
+                                            const isLongWord = word.duration > 1.0;
                                             const chars = isLongWord ? word.text.split('') : null;
+
+                                            // Word-level active state for character animations
+                                            const isWordActive = position >= word.time * 1000 &&
+                                                position < (word.time + word.duration) * 1000;
 
                                             return (
                                                 <span
@@ -204,33 +208,33 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                         '--pop-y': `${popY}em`,
 
                                                         // Combined Animation: FILL on parent
-                                                        animationName: isActive ? 'karaokeFill' : 'none',
+                                                        animationName: isWordActive ? 'karaokeFill' : 'none',
                                                         animationDuration: `${word.duration}s`,
                                                         animationDelay: `${delay}s`,
                                                         animationFillMode: 'forwards',
                                                         animationTimingFunction: 'linear',
 
                                                         // Color Logic
-                                                        color: isActive ? 'transparent' : 'white',
-                                                        opacity: isSung || isWordSung ? 1 : (isActive ? 1 : 0.5),
+                                                        color: isWordActive ? 'transparent' : 'white',
+                                                        opacity: isSung || isWordSung ? 1 : (isWordActive ? 1 : 0.5),
 
                                                         // Gradient/Fill styles
                                                         backgroundClip: 'text',
                                                         WebkitBackgroundClip: 'text',
-                                                        backgroundImage: isActive
+                                                        backgroundImage: isWordActive
                                                             ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.5) 50%)`
                                                             : 'none',
                                                         backgroundSize: '200% 100%',
                                                         backgroundPosition: '100% 0',
 
-                                                        // Glow logic: "Only show on already sang words"
-                                                        textShadow: (isActive && isWordSung)
-                                                            ? '0 0 10px rgba(255, 255, 255, 0.4)'
+                                                        // Glow logic: show on sung words with smooth fade
+                                                        textShadow: isWordSung
+                                                            ? '0 0 12px rgba(255, 255, 255, 0.5)'
                                                             : 'none',
-                                                        transition: 'opacity 0.2s ease, text-shadow 0.2s ease',
+                                                        transition: 'opacity 0.4s ease, text-shadow 0.4s ease, transform 0.4s ease',
 
                                                         // If NOT long word, apply pop here
-                                                        ...((!isLongWord && isActive) ? {
+                                                        ...((!isLongWord && isWordActive) ? {
                                                             animationName: 'karaokeFill, wordPop',
                                                             animationDuration: `${word.duration}s, ${word.duration + 0.6}s`,
                                                             animationDelay: `${delay}s, ${delay}s`,
@@ -241,14 +245,14 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                 >
                                                     {isLongWord ? chars!.map((char, cIndex) => {
                                                         const charDuration = word.duration / chars!.length;
-                                                        const charDelay = cIndex * charDuration * 0.8; // Dense staggered
+                                                        const charDelay = cIndex * charDuration * 0.7; // Staggered timing
 
                                                         return (
                                                             <span key={cIndex} style={{
                                                                 display: 'inline-block',
-                                                                animationName: isActive ? 'wordPop' : 'none',
-                                                                animationDuration: `${charDuration + 0.6}s`,
-                                                                animationDelay: `${delay + charDelay}s`,
+                                                                animationName: isWordActive ? 'wordPop' : 'none',
+                                                                animationDuration: `${charDuration + 0.5}s`,
+                                                                animationDelay: `${charDelay}s`,
                                                                 animationFillMode: 'none',
                                                                 animationTimingFunction: 'ease-out',
                                                                 background: 'transparent'
@@ -272,9 +276,9 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                 key={`bg-${bgIndex}`}
                                                 className={`Vocals ${bgIsActive ? 'Active' : ''}`}
                                                 style={{
-                                                    fontSize: '70%',
-                                                    fontWeight: 400,
-                                                    opacity: 0.7,
+                                                    fontSize: '85%',
+                                                    fontWeight: 500,
+                                                    opacity: 0.8,
                                                     alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start'
                                                 }}
                                             >
@@ -292,11 +296,12 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                             style={{
                                                                 display: 'inline-block',
                                                                 marginRight: '0.3em',
-                                                                animationName: wordActive ? 'karaokeFill' : 'none',
-                                                                animationDuration: `${word.duration}s`,
-                                                                animationDelay: `${wordDelay}s`,
-                                                                animationFillMode: 'forwards',
-                                                                animationTimingFunction: 'linear',
+                                                                // Combined animation: karaokeFill + wordPop
+                                                                animationName: wordActive ? 'karaokeFill, wordPop' : 'none',
+                                                                animationDuration: `${word.duration}s, ${word.duration + 0.4}s`,
+                                                                animationDelay: `${wordDelay}s, ${wordDelay}s`,
+                                                                animationFillMode: 'forwards, none',
+                                                                animationTimingFunction: 'linear, ease-out',
                                                                 color: wordActive ? 'transparent' : 'white',
                                                                 opacity: wordSung ? 1 : (wordActive ? 1 : 0.5),
                                                                 backgroundClip: 'text',
@@ -305,7 +310,9 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                     ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.5) 50%)`
                                                                     : 'none',
                                                                 backgroundSize: '200% 100%',
-                                                                backgroundPosition: '100% 0'
+                                                                backgroundPosition: '100% 0',
+                                                                textShadow: wordSung ? '0 0 8px rgba(255,255,255,0.3)' : 'none',
+                                                                transition: 'opacity 0.3s ease, text-shadow 0.3s ease'
                                                             } as React.CSSProperties}
                                                         >
                                                             {word.text}
