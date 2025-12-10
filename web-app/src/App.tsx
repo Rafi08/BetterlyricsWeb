@@ -54,7 +54,7 @@ const Content = () => {
       {!isActive ? (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
           <h2>Ready to play!</h2>
-          <small style={{ marginBottom: '1rem', opacity: 0.7 }}>v3.3 (Smooth Glow Fade)</small>
+          <small style={{ marginBottom: '1rem', opacity: 0.7 }}>v3.4 (Scroll Fix + Slower Fade)</small>
           <p>Open Spotify and connect to <strong>Beautiful Lyrics Web</strong></p>
           <small>Device ID: {deviceId}</small>
         </div>

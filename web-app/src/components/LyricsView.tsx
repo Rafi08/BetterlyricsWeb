@@ -60,6 +60,9 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
     }, [position, processedLyrics, activeLineIndex]);
 
     useEffect(() => {
+        // Debounce scroll to prevent jitter? 
+        // Or simply trust smooth scroll. 
+        // The main jitter comes from layout shifts, which we are fixing below.
         if (activeLineRef.current) {
             activeLineRef.current.scrollIntoView({
                 behavior: 'smooth',
@@ -136,7 +139,6 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
 
                         // Normal Line Logic
                         const lineStartTime = line.time;
-                        // Estimate line end based on last word or next line
                         const lastWord = line.words && line.words.length > 0 ? line.words[line.words.length - 1] : null;
                         const lineEndTime = lastWord
                             ? (lastWord.time + lastWord.duration)
@@ -156,12 +158,16 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                     key={index}
                                     className="VocalsGroup"
                                     onClick={() => seek && seek(line.time * 1000)}
+                                    // MATCH ACTIVE LAYOUT: flex col, gap 0.25rem
                                     style={{
                                         textAlign: line.oppositeAligned ? 'right' : 'left',
                                         alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start',
                                         maxWidth: '70%',
                                         width: 'fit-content',
-                                        opacity: isSung ? 0.5 : 1 // Sung lines dim
+                                        opacity: isSung ? 0.5 : 1,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '0.25rem'
                                     }}
                                 >
                                     <span className={`Vocals ${isSung ? 'Sung' : ''}`}>
@@ -172,8 +178,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                 style={{
                                                     display: 'inline-block',
                                                     marginRight: '0.3em',
-                                                    color: isSung ? 'white' : 'white', // Base text color
-                                                    opacity: isSung ? 1 : 0.5 // Inactive opacity
+                                                    color: isSung ? 'white' : 'white',
+                                                    opacity: isSung ? 1 : 0.5
                                                 }}
                                             >
                                                 {txt}
@@ -182,7 +188,16 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                     </span>
                                     {/* Render simplified BG vocals if present */}
                                     {line.backgroundLines && line.backgroundLines.map((bgLine, bgIndex) => (
-                                        <span key={`bg-${bgIndex}`} style={{ display: 'inline-block', fontSize: '2.4rem', opacity: 0.5, marginLeft: '1rem' }}>
+                                        <span
+                                            key={`bg-${bgIndex}`}
+                                            style={{
+                                                display: 'inline-block',
+                                                fontSize: '2.4rem',
+                                                opacity: 0.5,
+                                                marginLeft: '0',
+                                                fontWeight: 500,
+                                                alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start'
+                                            }}>
                                             {bgLine.text}
                                         </span>
                                     ))}
@@ -267,7 +282,6 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                 <span className={`Vocals Active`}>
                                     {line.words.map((word, wIndex) => {
                                         const delay = Math.max(0, word.time - line.time);
-                                        // Inclusive check for sung state to prevent flicker
                                         const isWordSung = effectivePosition >= (word.time + word.duration);
                                         const isWordActive = effectivePosition >= word.time && effectivePosition < (word.time + word.duration);
 
@@ -323,7 +337,6 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                 </span>
 
                                                                 {/* Overlay Layer (Heavy Effect) */}
-                                                                {/* Render if Active OR Sung to allow fade out */}
                                                                 {(isSylActive || isSylSung) && (
                                                                     <span style={{
                                                                         position: 'absolute',
@@ -332,13 +345,11 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                         color: 'transparent',
                                                                         backgroundClip: 'text',
                                                                         WebkitBackgroundClip: 'text',
-                                                                        // If sung, full opacity white. If active, gradient.
                                                                         backgroundImage: isSylSung
                                                                             ? `linear-gradient(to right, white 100%, white 100%)`
                                                                             : `linear-gradient(to right, white 50%, transparent 50%)`,
                                                                         backgroundSize: '200% 100%',
 
-                                                                        // Animation only when strictly active
                                                                         animationName: isSylActive ? 'karaokeFill' : 'none',
                                                                         animationDuration: `${syl.duration}s`,
                                                                         animationDelay: '0s',
@@ -346,10 +357,10 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                         animationTimingFunction: 'linear',
 
                                                                         filter: `drop-shadow(0 0 ${epicGlow}px white)`,
-                                                                        // FADE OUT LOGIC: 0 opacity if sung, 1 if active
+                                                                        // SMOOTHER FADE OUT: 2s
                                                                         opacity: isSylActive ? 1 : 0,
-                                                                        transition: 'opacity 0.8s ease-out', // Slow fade out
-                                                                        willChange: 'opacity, background-position' // Optimize
+                                                                        transition: 'opacity 2s ease-out',
+                                                                        willChange: 'opacity, background-position'
                                                                     }}>
                                                                         {syl.text}
                                                                     </span>
@@ -401,7 +412,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
 
                                                                 filter: `drop-shadow(0 0 ${epicGlow}px white)`,
                                                                 opacity: isWordActive ? 1 : 0,
-                                                                transition: 'opacity 0.8s ease-out',
+                                                                transition: 'opacity 2s ease-out',
                                                                 willChange: 'opacity, background-position'
 
                                                             }}>
