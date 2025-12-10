@@ -289,13 +289,14 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
 
                                     {/* Background Vocals - render below main line */}
                                     {line.backgroundLines && line.backgroundLines.map((bgLine, bgIndex) => {
-                                        // Fix end time calculation: words have absolute times, so don't add bgLine.time
+                                        // Fix end time calculation: words have absolute times
                                         const lastBgWord = bgLine.words?.[bgLine.words.length - 1];
                                         const bgEndTime = lastBgWord ? (lastBgWord.time + lastBgWord.duration) : (bgLine.time + 3);
 
-                                        const bgIsActive = position >= bgLine.time * 1000 &&
-                                            position < bgEndTime * 1000;
-                                        const bgIsSung = position >= bgEndTime * 1000;
+                                        // Fix: comparison units! effectivePosition is seconds. bgLine.time is seconds.
+                                        const bgIsActive = effectivePosition >= bgLine.time &&
+                                            effectivePosition < bgEndTime;
+                                        const bgIsSung = effectivePosition >= bgEndTime;
 
                                         return (
                                             <span
@@ -316,7 +317,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                             >
                                                 {bgLine.words?.map((word, wIndex) => {
                                                     const wordDelay = Math.max(0, word.time - bgLine.time);
-                                                    const wordSung = position >= (word.time + word.duration) * 1000;
+                                                    // Fix: comparison units! effectivePosition is seconds.
+                                                    const wordSung = effectivePosition >= (word.time + word.duration);
 
                                                     return (
                                                         <span
