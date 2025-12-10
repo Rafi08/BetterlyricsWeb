@@ -120,26 +120,14 @@ export const SpicyLyricsService = {
 
                 const rawText = syllables.map((s) => s.Text + (s.IsPartOfWord ? "" : " ")).join("").trim();
 
-
-                lines.push({
-                    time: content.Lead.StartTime,
-                    text: rawText,
-                    words: words,
-                    oppositeAligned: content.OppositeAligned === true
-                });
-
-                // Background Vocals Handling
+                // Parse Background Vocals (if any)
+                const backgroundLines: LyricLine[] = [];
                 if (content.Background && Array.isArray(content.Background)) {
                     for (const bg of content.Background) {
-                        // Background entry usually has words too, sometimes just "Text"
-                        // Based on user JSON: { Text: "Let's", StartTime: ..., EndTime: ..., Syllables: [...] }
-
                         let bgWords: LyricWord[] = [];
-                        let bgText = bg.Text || "";
+                        let bgText = "";
 
                         if (bg.Syllables && Array.isArray(bg.Syllables)) {
-                            // Re-use syllable parsing logic or simplified version
-                            // Since Background syllables are same structure:
                             let curText = "";
                             let curStart = -1;
 
@@ -157,8 +145,9 @@ export const SpicyLyricsService = {
                                     curStart = -1;
                                 }
                             }
+                            bgText = bg.Syllables.map((s: SpicySyllable) => s.Text + (s.IsPartOfWord ? "" : " ")).join("").trim();
                         } else {
-                            // Fallback if no syllables, just one word/line
+                            bgText = bg.Text || "";
                             bgWords.push({
                                 text: bgText,
                                 time: bg.StartTime,
@@ -166,15 +155,22 @@ export const SpicyLyricsService = {
                             });
                         }
 
-                        lines.push({
+                        backgroundLines.push({
                             time: bg.StartTime,
                             text: bgText,
                             words: bgWords,
-                            oppositeAligned: true, // Background is always opposite/right aligned
                             isBackground: true
                         });
                     }
                 }
+
+                lines.push({
+                    time: content.Lead.StartTime,
+                    text: rawText,
+                    words: words,
+                    oppositeAligned: content.OppositeAligned === true,
+                    backgroundLines: backgroundLines.length > 0 ? backgroundLines : undefined
+                });
             }
         }
 

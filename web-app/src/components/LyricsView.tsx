@@ -153,20 +153,17 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                     className={`VocalsGroup`}
                                     onClick={() => seek && seek(line.time * 1000)}
                                     style={{
-                                        textAlign: (line.oppositeAligned || line.isBackground) ? 'right' : 'left',
-                                        alignSelf: (line.oppositeAligned || line.isBackground) ? 'flex-end' : 'flex-start',
-                                        maxWidth: '70%', // Create visual separation
-                                        width: 'fit-content' // Allow it to shrink if line is short
+                                        textAlign: line.oppositeAligned ? 'right' : 'left',
+                                        alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start',
+                                        maxWidth: '70%',
+                                        width: 'fit-content',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '0.25rem'
                                     }}
                                 >
                                     <span
                                         className={`Vocals ${isActive ? 'Active' : ''} ${isSung ? 'Sung' : ''}`}
-                                        style={{
-                                            // Background Vocal Styling
-                                            // "smaller and thickness of font reduced"
-                                            fontSize: (line.oppositeAligned || line.isBackground) ? '70%' : undefined,
-                                            fontWeight: (line.oppositeAligned || line.isBackground) ? 400 : undefined
-                                        }}
                                     >
                                         {line.words.map((word, wIndex) => {
                                             // word.time is absolute (seconds)
@@ -264,6 +261,60 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                             );
                                         })}
                                     </span>
+
+                                    {/* Background Vocals - render below main line */}
+                                    {line.backgroundLines && line.backgroundLines.map((bgLine, bgIndex) => {
+                                        const bgIsActive = position >= bgLine.time * 1000 &&
+                                            position < (bgLine.time + (bgLine.words?.[bgLine.words.length - 1]?.time || 0) + (bgLine.words?.[bgLine.words.length - 1]?.duration || 2)) * 1000;
+
+                                        return (
+                                            <span
+                                                key={`bg-${bgIndex}`}
+                                                className={`Vocals ${bgIsActive ? 'Active' : ''}`}
+                                                style={{
+                                                    fontSize: '70%',
+                                                    fontWeight: 400,
+                                                    opacity: 0.7,
+                                                    alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start'
+                                                }}
+                                            >
+                                                {bgLine.words?.map((word, wIndex) => {
+                                                    const wordDelay = Math.max(0, word.time - bgLine.time);
+                                                    const wordActive = bgIsActive &&
+                                                        position >= word.time * 1000 &&
+                                                        position < (word.time + word.duration) * 1000;
+                                                    const wordSung = position >= (word.time + word.duration) * 1000;
+
+                                                    return (
+                                                        <span
+                                                            key={wIndex}
+                                                            className="Word"
+                                                            style={{
+                                                                display: 'inline-block',
+                                                                marginRight: '0.3em',
+                                                                animationName: wordActive ? 'karaokeFill' : 'none',
+                                                                animationDuration: `${word.duration}s`,
+                                                                animationDelay: `${wordDelay}s`,
+                                                                animationFillMode: 'forwards',
+                                                                animationTimingFunction: 'linear',
+                                                                color: wordActive ? 'transparent' : 'white',
+                                                                opacity: wordSung ? 1 : (wordActive ? 1 : 0.5),
+                                                                backgroundClip: 'text',
+                                                                WebkitBackgroundClip: 'text',
+                                                                backgroundImage: wordActive
+                                                                    ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.5) 50%)`
+                                                                    : 'none',
+                                                                backgroundSize: '200% 100%',
+                                                                backgroundPosition: '100% 0'
+                                                            } as React.CSSProperties}
+                                                        >
+                                                            {word.text}
+                                                        </span>
+                                                    );
+                                                }) || bgLine.text}
+                                            </span>
+                                        );
+                                    })}
                                 </div>
                             );
                         }

@@ -10,6 +10,7 @@ export interface LyricLine {
     words?: LyricWord[];
     oppositeAligned?: boolean;
     isBackground?: boolean;
+    backgroundLines?: LyricLine[]; // Background vocals attached to this line
 }
 
 export function parseLrc(lrc: string): LyricLine[] {
