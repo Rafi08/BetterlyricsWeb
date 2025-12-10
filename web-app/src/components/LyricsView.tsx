@@ -91,8 +91,15 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                     </div>
                 ) : (
                     processedLyrics.map((line, index) => {
-                        const isActive = index === activeLineIndex;
-                        const isSung = index < activeLineIndex;
+                        // Calculate line end time for time-based active check
+                        const hasWords = !('isGap' in line) && line.words && line.words.length > 0;
+                        const lineEndTime = hasWords
+                            ? (line.words![line.words!.length - 1].time + line.words![line.words!.length - 1].duration)
+                            : (processedLyrics[index + 1]?.time || (line.time + 5));
+
+                        // Time-based active check - allows multiple lines to be active simultaneously
+                        const isActive = effectivePosition >= line.time && effectivePosition < lineEndTime;
+                        const isSung = effectivePosition >= lineEndTime;
 
                         // Gap Logic
                         if ('isGap' in line) {
@@ -282,9 +289,13 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
 
                                     {/* Background Vocals - render below main line */}
                                     {line.backgroundLines && line.backgroundLines.map((bgLine, bgIndex) => {
+                                        // Fix end time calculation: words have absolute times, so don't add bgLine.time
+                                        const lastBgWord = bgLine.words?.[bgLine.words.length - 1];
+                                        const bgEndTime = lastBgWord ? (lastBgWord.time + lastBgWord.duration) : (bgLine.time + 3);
+
                                         const bgIsActive = position >= bgLine.time * 1000 &&
-                                            position < (bgLine.time + (bgLine.words?.[bgLine.words.length - 1]?.time || 0) + (bgLine.words?.[bgLine.words.length - 1]?.duration || 2)) * 1000;
-                                        const bgIsSung = position >= (bgLine.time + (bgLine.words?.[bgLine.words.length - 1]?.time || 0) + (bgLine.words?.[bgLine.words.length - 1]?.duration || 2)) * 1000;
+                                            position < bgEndTime * 1000;
+                                        const bgIsSung = position >= bgEndTime * 1000;
 
                                         return (
                                             <span
