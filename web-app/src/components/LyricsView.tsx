@@ -268,7 +268,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                 <span className={`Vocals Active`}>
                                     {line.words.map((word, wIndex) => {
                                         const delay = Math.max(0, word.time - line.time);
-                                        const isWordSung = effectivePosition > (word.time + word.duration);
+                                        // FIX: Use >= to prevent 1-frame gap
+                                        const isWordSung = effectivePosition >= (word.time + word.duration);
                                         const isWordActive = effectivePosition >= word.time && effectivePosition < (word.time + word.duration);
 
                                         const epicFactor = Math.min(1.5, word.duration / 0.5);
@@ -291,7 +292,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                 {hasSyllables ? (
                                                     word.syllables!.map((syl, sIndex) => {
                                                         const sylDelay = Math.max(0, syl.time - line.time);
-                                                        const isSylSung = effectivePosition > (syl.time + syl.duration);
+                                                        // FIX: Use >= to prevent 1-frame gap
+                                                        const isSylSung = effectivePosition >= (syl.time + syl.duration);
                                                         const isSylActive = effectivePosition >= syl.time && effectivePosition < (syl.time + syl.duration);
 
                                                         const sylEpicFactor = Math.min(1.5, syl.duration / 0.5);
