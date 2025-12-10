@@ -189,15 +189,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                             // word.time is absolute (seconds)
                                             // line.time is absolute (seconds)
                                             // We want delay relative to line start.
-                                            // HOWEVER: CSS animation-delay starts counting when the class is added.
-                                            // The class 'Active' is added roughly at `line.time`.
-                                            // So `word.time - line.time` is the correct delay.
                                             let delay = Math.max(0, word.time - line.time);
-
-                                            // Safety: Ensure delay isn't negative or huge if timestamps are weird.
-
-                                            // Status within line
-                                            // The word is "animating" from `delay` to `delay + word.duration`.
 
                                             const isWordSung = (effectivePosition > (word.time + word.duration));
 
@@ -210,13 +202,12 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                 position < (word.time + word.duration) * 1000;
 
                                             // Dynamic epic effect based on duration
-                                            // Longer words = bigger pop and more glow
                                             const epicFactor = Math.min(1.5, word.duration / 0.5);
                                             const epicScale = 1 + (0.08 * epicFactor); // Max 1.12
                                             const epicY = -0.15 * epicFactor; // Max -0.225em
                                             const epicGlow = Math.min(20, 8 + (word.duration * 8)); // 8-20px glow
 
-                                            // Syllable Logic: Use API syllables if available
+                                            // Syllable Logic
                                             const hasSyllables = word.syllables && word.syllables.length > 0;
 
                                             return (
@@ -234,14 +225,14 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                             const sylDelay = Math.max(0, syl.time - line.time);
                                                             const isSylSung = effectivePosition > (syl.time + syl.duration);
 
-                                                            // Calculate syllable-level epic effect (scaled down)
+                                                            // Calculate syllable-level epic effect
                                                             const sylEpicFactor = Math.min(1.5, syl.duration / 0.5);
                                                             const sylEpicScale = 1 + (0.05 * sylEpicFactor);
                                                             const sylEpicY = -0.1 * sylEpicFactor;
 
-                                                            const shouldShake = syl.duration > 0.6;
-                                                            const shakeAnimation = shouldShake ? ', wordShake' : '';
-                                                            const shakeDuration = shouldShake ? `, ${syl.duration}s` : '';
+                                                            // Glow if sung OR currently being sung (active)
+                                                            const isSylActive = effectivePosition >= syl.time && effectivePosition < (syl.time + syl.duration);
+                                                            const showGlow = isSylSung || isSylActive;
 
                                                             return (
                                                                 <span
@@ -250,12 +241,12 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                         display: 'inline-block',
                                                                         '--pop-scale': sylEpicScale,
                                                                         '--pop-y': `${sylEpicY}em`,
-                                                                        animationName: isActive ? `karaokeFill, wordPop${shakeAnimation}` : 'none',
-                                                                        animationDuration: `${syl.duration}s, ${syl.duration + 0.8}s${shakeDuration}`,
-                                                                        animationDelay: `${sylDelay}s, ${sylDelay}s${shouldShake ? `, ${sylDelay}s` : ''}`,
-                                                                        animationFillMode: 'forwards, none, none',
-                                                                        animationTimingFunction: 'linear, ease-out, ease-in-out',
-                                                                        animationIterationCount: '1, 1, infinite',
+                                                                        // Only use wordPop, no shake
+                                                                        animationName: isActive ? `karaokeFill, wordPop` : 'none',
+                                                                        animationDuration: `${syl.duration}s, ${syl.duration + 0.8}s`,
+                                                                        animationDelay: `${sylDelay}s, ${sylDelay}s`,
+                                                                        animationFillMode: 'forwards, none',
+                                                                        animationTimingFunction: 'linear, ease-out',
 
                                                                         color: isActive ? 'transparent' : (isSylSung ? 'white' : 'rgba(255,255,255,0.5)'),
                                                                         opacity: isSylSung ? 1 : (isActive ? 1 : 0.5),
@@ -266,10 +257,10 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                             : 'none',
                                                                         backgroundSize: '200% 100%',
                                                                         backgroundPosition: '100% 0',
-                                                                        textShadow: isSylSung
+                                                                        textShadow: showGlow
                                                                             ? `0 0 ${epicGlow}px rgba(255, 255, 255, 0.6)`
                                                                             : 'none',
-                                                                        transition: 'text-shadow 0.8s ease, color 0.8s ease, opacity 0.8s ease, transform 0.8s ease'
+                                                                        transition: 'text-shadow 0.2s ease, color 0.8s ease, opacity 0.8s ease, transform 0.8s ease'
                                                                     } as React.CSSProperties}
                                                                 >
                                                                     {syl.text}
@@ -277,18 +268,18 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                             );
                                                         })
                                                     ) : (
-                                                        // Fallback: Whole Word Animation (or Char split for long words)
+                                                        // Fallback: Whole Word Animation
                                                         <span
                                                             style={{
                                                                 display: 'inline-block',
                                                                 '--pop-scale': epicScale,
                                                                 '--pop-y': `${epicY}em`,
-                                                                animationName: isActive ? (isLongWord ? 'karaokeFill, wordPop, wordShake' : 'karaokeFill, wordPop') : 'none',
-                                                                animationDuration: `${word.duration}s, ${word.duration + 0.8}s${isLongWord ? `, ${word.duration}s` : ''}`,
-                                                                animationDelay: `${delay}s, ${delay}s${isLongWord ? `, ${delay}s` : ''}`,
-                                                                animationFillMode: 'forwards, none, none',
-                                                                animationTimingFunction: 'linear, ease-out, ease-in-out',
-                                                                animationIterationCount: '1, 1, infinite',
+                                                                // Use wordPop logic only
+                                                                animationName: isActive ? 'karaokeFill, wordPop' : 'none',
+                                                                animationDuration: `${word.duration}s, ${word.duration + 0.8}s`,
+                                                                animationDelay: `${delay}s, ${delay}s`,
+                                                                animationFillMode: 'forwards, none',
+                                                                animationTimingFunction: 'linear, ease-out',
 
                                                                 color: isActive ? 'transparent' : (isWordSung ? 'white' : 'rgba(255,255,255,0.5)'),
                                                                 opacity: isWordSung ? 1 : (isActive ? 1 : 0.5),
@@ -299,30 +290,26 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                     : 'none',
                                                                 backgroundSize: '200% 100%',
                                                                 backgroundPosition: '100% 0',
-                                                                textShadow: isWordSung
+                                                                // Glow if Sung OR Active
+                                                                textShadow: (isWordSung || isWordActive)
                                                                     ? `0 0 ${epicGlow}px rgba(255, 255, 255, 0.6)`
                                                                     : 'none',
-                                                                transition: 'text-shadow 0.8s ease, color 0.8s ease, opacity 0.8s ease, transform 0.8s ease'
+                                                                transition: 'text-shadow 0.2s ease, color 0.8s ease, opacity 0.8s ease, transform 0.8s ease'
                                                             } as React.CSSProperties}
                                                         >
                                                             {isLongWord && isWordActive ? chars!.map((char, cIndex) => {
                                                                 const charDuration = word.duration / chars!.length;
                                                                 const charDelay = cIndex * charDuration * 0.6;
-                                                                const wordProgress = (position / 1000 - word.time) / word.duration;
-                                                                // Shake trigger earlier
-                                                                const isNearEnd = wordProgress > 0.4;
+                                                                // Removed char shake logic
 
                                                                 return (
                                                                     <span key={cIndex} style={{
                                                                         display: 'inline-block',
-                                                                        animationName: isNearEnd ? 'wordPop, charShake' : 'wordPop',
-                                                                        animationDuration: isNearEnd
-                                                                            ? `${charDuration + 0.4}s, 0.3s`
-                                                                            : `${charDuration + 0.4}s`,
+                                                                        animationName: 'wordPop', // Basic pop for chars if needed
+                                                                        animationDuration: `${charDuration + 0.4}s`,
                                                                         animationDelay: `${charDelay}s`,
                                                                         animationFillMode: 'none',
-                                                                        animationTimingFunction: 'ease-out, ease-in-out',
-                                                                        animationIterationCount: isNearEnd ? '1, infinite' : '1',
+                                                                        animationTimingFunction: 'ease-out',
                                                                         background: 'transparent'
                                                                     }}>
                                                                         {char}
@@ -338,22 +325,16 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
 
                                     {/* Background Vocals - render below main line */}
                                     {line.backgroundLines && line.backgroundLines.map((bgLine, bgIndex) => {
-                                        // Fix end time calculation: words have absolute times
                                         const lastBgWord = bgLine.words?.[bgLine.words.length - 1];
                                         const bgEndTime = lastBgWord ? (lastBgWord.time + lastBgWord.duration) : (bgLine.time + 3);
-
-                                        // Fix: comparison units! effectivePosition is seconds. bgLine.time is seconds.
-                                        const bgIsActive = effectivePosition >= bgLine.time &&
-                                            effectivePosition < bgEndTime;
+                                        const bgIsActive = effectivePosition >= bgLine.time && effectivePosition < bgEndTime;
                                         const bgIsSung = effectivePosition >= bgEndTime;
 
                                         return (
                                             <span
                                                 key={`bg-${bgIndex}`}
-                                                // No Vocals class to avoid CSS conflicts
                                                 style={{
                                                     display: 'inline-block',
-                                                    // 80% of main size (3rem * 0.8 = 2.4rem)
                                                     fontSize: '2.4rem',
                                                     fontWeight: 500,
                                                     opacity: bgIsActive ? 1 : (bgIsSung ? 0.7 : 0.5),
@@ -366,9 +347,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                             >
                                                 {bgLine.words?.map((word, wIndex) => {
                                                     const wordDelay = Math.max(0, word.time - bgLine.time);
-                                                    // Fix: comparison units! effectivePosition is seconds.
                                                     const wordSung = effectivePosition >= (word.time + word.duration);
-
                                                     return (
                                                         <span
                                                             key={wIndex}
@@ -376,13 +355,11 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                             style={{
                                                                 display: 'inline-block',
                                                                 marginRight: '0.3em',
-                                                                // Animation triggers on line active with word delay
                                                                 animationName: bgIsActive ? 'karaokeFill, wordPop' : 'none',
                                                                 animationDuration: `${word.duration}s, ${word.duration + 0.5}s`,
                                                                 animationDelay: `${wordDelay}s, ${wordDelay}s`,
                                                                 animationFillMode: 'forwards, none',
                                                                 animationTimingFunction: 'linear, ease-out',
-                                                                // Transparent when line active so gradient shows
                                                                 color: bgIsActive ? 'transparent' : (wordSung ? 'white' : 'rgba(255,255,255,0.5)'),
                                                                 opacity: wordSung ? 1 : (bgIsActive ? 1 : 0.5),
                                                                 backgroundClip: 'text',

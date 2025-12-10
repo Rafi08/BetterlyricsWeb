@@ -180,23 +180,27 @@ body.is-tv {
 
 @keyframes wordShake {
     0% {
-        transform: scale(var(--pop-scale, 1.05)) translateY(0);
+        transform: scale(1) translateY(0) rotate(0deg);
     }
 
-    25% {
-        transform: scale(calc(var(--pop-scale, 1.05) + 0.01)) translateY(-0.01em);
+    20% {
+        transform: scale(1.02) translateY(calc(var(--pop-y, -0.1em) * 0.2)) rotate(0.5deg);
     }
 
-    50% {
-        transform: scale(var(--pop-scale, 1.05)) translateY(0.01em);
+    40% {
+        transform: scale(1.04) translateY(calc(var(--pop-y, -0.1em) * 0.4)) rotate(-1deg);
     }
 
-    75% {
-        transform: scale(calc(var(--pop-scale, 1.05) + 0.01)) translateY(-0.01em);
+    60% {
+        transform: scale(calc(var(--pop-scale, 1.1) * 0.8)) translateY(calc(var(--pop-y, -0.1em) * 0.6)) rotate(1.5deg);
+    }
+
+    80% {
+        transform: scale(calc(var(--pop-scale, 1.1) * 0.9)) translateY(calc(var(--pop-y, -0.1em) * 0.8)) rotate(-2deg);
     }
 
     100% {
-        transform: scale(var(--pop-scale, 1.05)) translateY(0);
+        transform: scale(var(--pop-scale, 1.1)) translateY(var(--pop-y, -0.1em)) rotate(2.5deg);
     }
 }
 
