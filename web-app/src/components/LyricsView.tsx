@@ -8,7 +8,7 @@ interface LyricsViewProps {
     seek: (pos: number) => void;
 }
 
-const SYNC_OFFSET = 0.5; // Seconds to compensate for "late" lyrics (advances internal time)
+const SYNC_OFFSET = 0.5; // Seconds to compensate for "late" lyrics
 const GAP_THRESHOLD = 5; // Seconds to consider a gap "instrumental"
 
 const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
@@ -24,19 +24,15 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
 
         // 1. Intro Gap Detection
         if (lyrics[0].time > GAP_THRESHOLD) {
-            result.push({ isGap: true, time: 0.5 } as any); // Start almost immediately
+            result.push({ isGap: true, time: 0.5 } as any);
         }
 
         for (let i = 0; i < lyrics.length; i++) {
             result.push(lyrics[i]);
-
-            // Check for gap
             if (i < lyrics.length - 1) {
                 const currentEnd = lyrics[i].time;
                 const nextStart = lyrics[i + 1].time;
-
                 if (nextStart - currentEnd > GAP_THRESHOLD + 3) {
-                    // Approximate time for the dots to appear
                     result.push({ isGap: true, time: currentEnd + 2 } as any);
                 }
             }
@@ -46,30 +42,22 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
 
     useEffect(() => {
         if (!lyrics) return;
-
-        // Use compensated position
         const effectivePosition = position + SYNC_OFFSET;
-
-        // Check if lyrics are static (all 0 or only one line 0)
         const isStatic = lyrics.every(l => l.time === 0);
         if (isStatic) {
             setActiveLineIndex(-1);
             return;
         }
 
-        // Find the active line (lines are sorted by time)
         const index = processedLyrics.findIndex((line, i) => {
             const nextLine = processedLyrics[i + 1];
             return effectivePosition >= line.time && (!nextLine || effectivePosition < nextLine.time);
         });
 
         if (index !== -1 && index !== activeLineIndex) {
-            console.log(`[LyricsView] Update Active Index: ${index} (Pos: ${effectivePosition.toFixed(2)})`);
             setActiveLineIndex(index);
-        } else if (index === -1 && processedLyrics.length > 0) {
-            console.log(`[LyricsView] No active line found. Pos: ${effectivePosition.toFixed(2)}. First: ${processedLyrics[0].time}, Last: ${processedLyrics[processedLyrics.length - 1].time}`);
         }
-    }, [position, processedLyrics]);
+    }, [position, processedLyrics, activeLineIndex]);
 
     useEffect(() => {
         if (activeLineRef.current) {
@@ -91,21 +79,12 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                     </div>
                 ) : (
                     processedLyrics.map((line, index) => {
-                        // Calculate line end time for time-based active check
-                        const hasWords = !('isGap' in line) && line.words && line.words.length > 0;
-                        const lineEndTime = hasWords
-                            ? (line.words![line.words!.length - 1].time + line.words![line.words!.length - 1].duration)
-                            : (processedLyrics[index + 1]?.time || (line.time + 5));
-
-                        // Time-based active check - allows multiple lines to be active simultaneously
-                        const isActive = effectivePosition >= line.time && effectivePosition < lineEndTime;
-                        const isSung = effectivePosition >= lineEndTime;
-
                         // Gap Logic
                         if ('isGap' in line) {
-                            // Calculate duration based on next line time or default
                             const nextLineTime = processedLyrics[index + 1]?.time || (line.time + 5);
                             const duration = Math.max(1, nextLineTime - line.time);
+                            const isActive = effectivePosition >= line.time && effectivePosition < nextLineTime;
+                            const isSung = effectivePosition >= nextLineTime;
 
                             return (
                                 <div
@@ -117,7 +96,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                     <span
                                         className={`Vocals ${isActive ? 'Active' : ''}`}
                                         style={{
-                                            fontSize: '3rem', // Bigger dots
+                                            fontSize: '3rem',
                                             '--duration': `${duration}s`,
                                             display: 'inline-flex',
                                             gap: '1rem',
@@ -125,23 +104,19 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                         } as React.CSSProperties}
                                     >
                                         {[0, 1, 2].map((_, dIndex) => {
-                                            // Each dot fills during 1/3 of the gap duration
                                             const dotDuration = duration / 3;
                                             const dotDelay = dIndex * dotDuration;
-
                                             return (
                                                 <span
                                                     key={dIndex}
                                                     style={{
                                                         display: 'inline-block',
-                                                        // Combined: pulse + fill
                                                         animationName: isActive ? 'dotPulse, dotFill' : 'none',
                                                         animationDuration: isActive ? `1.5s, ${dotDuration}s` : '0s',
                                                         animationDelay: `${dIndex * 0.3}s, ${dotDelay}s`,
                                                         animationIterationCount: 'infinite, 1',
                                                         animationTimingFunction: 'ease-in-out, linear',
                                                         animationFillMode: 'none, forwards',
-                                                        // Gradient for fill effect
                                                         color: 'transparent',
                                                         backgroundClip: 'text',
                                                         WebkitBackgroundClip: 'text',
@@ -160,12 +135,24 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                         }
 
                         // Normal Line Logic
-                        // Calculate line duration (fallback for when no word timings)
-                        const nextLineTime = processedLyrics[index + 1]?.time || (line.time + 5);
-                        const lineDuration = Math.max(1, nextLineTime - line.time);
+                        const lineStartTime = line.time;
+                        // Estimate line end based on last word or next line
+                        const lastWord = line.words && line.words.length > 0 ? line.words[line.words.length - 1] : null;
+                        const lineEndTime = lastWord
+                            ? (lastWord.time + lastWord.duration)
+                            : (processedLyrics[index + 1]?.time || (line.time + 5));
 
-                        // If we have real word timings, use them!
-                        if (line.words && line.words.length > 0) {
+                        const isActive = effectivePosition >= lineStartTime && effectivePosition < lineEndTime;
+                        const isSung = effectivePosition >= lineEndTime;
+
+                        // Fallback logic check
+                        if (!line.words || line.words.length === 0) {
+                            // Simulated sync fallback (simplified)
+                            const words = line.text.split(' ');
+                            const totalChars = line.text.length;
+                            const lineDur = Math.max(1, lineEndTime - lineStartTime);
+                            let accumulatedDelay = 0;
+
                             return (
                                 <div
                                     key={index}
@@ -176,39 +163,14 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                         textAlign: line.oppositeAligned ? 'right' : 'left',
                                         alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start',
                                         maxWidth: '70%',
-                                        width: 'fit-content',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '0.25rem'
+                                        width: 'fit-content'
                                     }}
                                 >
-                                    <span
-                                        className={`Vocals ${isActive ? 'Active' : ''} ${isSung ? 'Sung' : ''}`}
-                                    >
-                                        {line.words.map((word, wIndex) => {
-                                            // word.time is absolute (seconds)
-                                            // line.time is absolute (seconds)
-                                            // We want delay relative to line start.
-                                            let delay = Math.max(0, word.time - line.time);
-
-                                            const isWordSung = (effectivePosition > (word.time + word.duration));
-
-                                            // CHAR SPLIT LOGIC - only for truly long words (>1s)
-                                            const isLongWord = word.duration > 1.0;
-                                            const chars = isLongWord ? word.text.split('') : null;
-
-                                            // Word-level states for visual feedback
-                                            const isWordActive = position >= word.time * 1000 &&
-                                                position < (word.time + word.duration) * 1000;
-
-                                            // Dynamic epic effect based on duration
-                                            const epicFactor = Math.min(1.5, word.duration / 0.5);
-                                            const epicScale = 1 + (0.08 * epicFactor); // Max 1.12
-                                            const epicY = -0.15 * epicFactor; // Max -0.225em
-                                            const epicGlow = Math.min(20, 8 + (word.duration * 8)); // 8-20px glow
-
-                                            // Syllable Logic
-                                            const hasSyllables = word.syllables && word.syllables.length > 0;
+                                    <span className={`Vocals ${isActive ? 'Active' : ''} ${isSung ? 'Sung' : ''}`}>
+                                        {words.map((word, wIndex) => {
+                                            const wordDuration = (word.length / totalChars) * lineDur * 0.9;
+                                            const currentDelay = accumulatedDelay;
+                                            accumulatedDelay += wordDuration;
 
                                             return (
                                                 <span
@@ -217,196 +179,60 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                     style={{
                                                         display: 'inline-block',
                                                         marginRight: '0.3em',
-                                                        whiteSpace: 'nowrap'
+                                                        // Fallback uses simple gradient fill
+                                                        animationName: isActive ? 'karaokeFill' : 'none',
+                                                        animationDuration: `${wordDuration}s`,
+                                                        animationDelay: `${currentDelay}s`,
+                                                        animationFillMode: 'forwards',
+                                                        animationTimingFunction: 'linear',
+                                                        color: isSung ? 'white' : 'inherit',
+                                                        opacity: isSung ? 0.5 : 1,
+                                                        backgroundClip: 'text',
+                                                        WebkitBackgroundClip: 'text',
+                                                        backgroundImage: isActive
+                                                            ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.5) 50%)`
+                                                            : 'none',
+                                                        backgroundSize: '200% 100%',
+                                                        backgroundPosition: '100% 0'
                                                     }}
                                                 >
-                                                    {hasSyllables ? (
-                                                        word.syllables!.map((syl, sIndex) => {
-                                                            const sylDelay = Math.max(0, syl.time - line.time);
-                                                            const isSylSung = effectivePosition > (syl.time + syl.duration);
-
-                                                            // Calculate syllable-level epic effect
-                                                            const sylEpicFactor = Math.min(1.5, syl.duration / 0.5);
-                                                            const sylEpicScale = 1 + (0.05 * sylEpicFactor);
-                                                            const sylEpicY = -0.1 * sylEpicFactor;
-
-                                                            // Glow if sung OR currently being sung (active)
-                                                            const isSylActive = effectivePosition >= syl.time && effectivePosition < (syl.time + syl.duration);
-                                                            const showGlow = isSylSung || isSylActive;
-
-                                                            return (
-                                                                <span
-                                                                    key={sIndex}
-                                                                    style={{
-                                                                        display: 'inline-block',
-                                                                        '--pop-scale': sylEpicScale,
-                                                                        '--pop-y': `${sylEpicY}em`,
-                                                                        // Only use wordPop, no shake
-                                                                        animationName: isActive ? `karaokeFill, wordPop` : 'none',
-                                                                        animationDuration: `${syl.duration}s, ${syl.duration + 0.8}s`,
-                                                                        animationDelay: `${sylDelay}s, ${sylDelay}s`,
-                                                                        animationFillMode: 'forwards, none',
-                                                                        animationTimingFunction: 'linear, ease-out',
-
-                                                                        color: isActive ? 'transparent' : (isSylSung ? 'white' : 'rgba(255,255,255,0.5)'),
-                                                                        opacity: isSylSung ? 1 : (isActive ? 1 : 0.5),
-                                                                        backgroundClip: 'text',
-                                                                        WebkitBackgroundClip: 'text',
-                                                                        backgroundImage: isActive
-                                                                            ? `linear-gradient(to right, white 50%, rgba(255,255,255,0.35) 50%)`
-                                                                            : 'none',
-                                                                        backgroundSize: '200% 100%',
-                                                                        backgroundPosition: '100% 0',
-                                                                        textShadow: showGlow
-                                                                            ? `0 0 ${epicGlow}px rgba(255, 255, 255, 0.6)`
-                                                                            : 'none',
-                                                                        transition: 'text-shadow 0.2s ease, color 0.8s ease, opacity 0.8s ease, transform 0.8s ease'
-                                                                    } as React.CSSProperties}
-                                                                >
-                                                                    {syl.text}
-                                                                </span>
-                                                            );
-                                                        })
-                                                    ) : (
-                                                        // Fallback: Whole Word Animation
-                                                        <span
-                                                            style={{
-                                                                display: 'inline-block',
-                                                                '--pop-scale': epicScale,
-                                                                '--pop-y': `${epicY}em`,
-                                                                // Use wordPop logic only
-                                                                animationName: isActive ? 'karaokeFill, wordPop' : 'none',
-                                                                animationDuration: `${word.duration}s, ${word.duration + 0.8}s`,
-                                                                animationDelay: `${delay}s, ${delay}s`,
-                                                                animationFillMode: 'forwards, none',
-                                                                animationTimingFunction: 'linear, ease-out',
-
-                                                                color: isActive ? 'transparent' : (isWordSung ? 'white' : 'rgba(255,255,255,0.5)'),
-                                                                opacity: isWordSung ? 1 : (isActive ? 1 : 0.5),
-                                                                backgroundClip: 'text',
-                                                                WebkitBackgroundClip: 'text',
-                                                                backgroundImage: isActive
-                                                                    ? `linear-gradient(to right, white 50%, rgba(255,255,255,0.35) 50%)`
-                                                                    : 'none',
-                                                                backgroundSize: '200% 100%',
-                                                                backgroundPosition: '100% 0',
-                                                                // Glow if Sung OR Active
-                                                                textShadow: (isWordSung || isWordActive)
-                                                                    ? `0 0 ${epicGlow}px rgba(255, 255, 255, 0.6)`
-                                                                    : 'none',
-                                                                transition: 'text-shadow 0.2s ease, color 0.8s ease, opacity 0.8s ease, transform 0.8s ease'
-                                                            } as React.CSSProperties}
-                                                        >
-                                                            {isLongWord && isWordActive ? chars!.map((char, cIndex) => {
-                                                                const charDuration = word.duration / chars!.length;
-                                                                const charDelay = cIndex * charDuration * 0.6;
-                                                                // Removed char shake logic
-
-                                                                return (
-                                                                    <span key={cIndex} style={{
-                                                                        display: 'inline-block',
-                                                                        animationName: 'wordPop', // Basic pop for chars if needed
-                                                                        animationDuration: `${charDuration + 0.4}s`,
-                                                                        animationDelay: `${charDelay}s`,
-                                                                        animationFillMode: 'none',
-                                                                        animationTimingFunction: 'ease-out',
-                                                                        background: 'transparent'
-                                                                    }}>
-                                                                        {char}
-                                                                    </span>
-                                                                )
-                                                            }) : word.text}
-                                                        </span>
-                                                    )}
+                                                    {word}
                                                 </span>
                                             );
                                         })}
                                     </span>
-
-                                    {/* Background Vocals - render below main line */}
-                                    {line.backgroundLines && line.backgroundLines.map((bgLine, bgIndex) => {
-                                        const lastBgWord = bgLine.words?.[bgLine.words.length - 1];
-                                        const bgEndTime = lastBgWord ? (lastBgWord.time + lastBgWord.duration) : (bgLine.time + 3);
-                                        const bgIsActive = effectivePosition >= bgLine.time && effectivePosition < bgEndTime;
-                                        const bgIsSung = effectivePosition >= bgEndTime;
-
-                                        return (
-                                            <span
-                                                key={`bg-${bgIndex}`}
-                                                style={{
-                                                    display: 'inline-block',
-                                                    fontSize: '2.4rem',
-                                                    fontWeight: 500,
-                                                    opacity: bgIsActive ? 1 : (bgIsSung ? 0.7 : 0.5),
-                                                    filter: bgIsActive ? 'blur(0)' : 'blur(0.5px)',
-                                                    transform: bgIsActive ? 'scale(1.02)' : 'scale(0.98)',
-                                                    transformOrigin: 'left center',
-                                                    transition: 'opacity 0.5s ease, transform 0.5s ease, filter 0.4s ease',
-                                                    alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start'
-                                                }}
-                                            >
-                                                {bgLine.words?.map((word, wIndex) => {
-                                                    const wordDelay = Math.max(0, word.time - bgLine.time);
-                                                    const wordSung = effectivePosition >= (word.time + word.duration);
-                                                    return (
-                                                        <span
-                                                            key={wIndex}
-                                                            className="Word"
-                                                            style={{
-                                                                display: 'inline-block',
-                                                                marginRight: '0.3em',
-                                                                animationName: bgIsActive ? 'karaokeFill, wordPop' : 'none',
-                                                                animationDuration: `${word.duration}s, ${word.duration + 0.5}s`,
-                                                                animationDelay: `${wordDelay}s, ${wordDelay}s`,
-                                                                animationFillMode: 'forwards, none',
-                                                                animationTimingFunction: 'linear, ease-out',
-                                                                color: bgIsActive ? 'transparent' : (wordSung ? 'white' : 'rgba(255,255,255,0.5)'),
-                                                                opacity: wordSung ? 1 : (bgIsActive ? 1 : 0.5),
-                                                                backgroundClip: 'text',
-                                                                WebkitBackgroundClip: 'text',
-                                                                backgroundImage: bgIsActive
-                                                                    ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.35) 50%)`
-                                                                    : 'none',
-                                                                backgroundSize: '200% 100%',
-                                                                backgroundPosition: '100% 0',
-                                                                textShadow: wordSung ? '0 0 10px rgba(255,255,255,0.4)' : 'none',
-                                                                transition: 'text-shadow 0.4s ease'
-                                                            } as React.CSSProperties}
-                                                        >
-                                                            {word.text}
-                                                        </span>
-                                                    );
-                                                }) || bgLine.text}
-                                            </span>
-                                        );
-                                    })}
                                 </div>
                             );
                         }
-
-                        // Fallback: Simulated word sync (current behavior)
-                        const words = line.text.split(' ');
-                        const totalChars = line.text.length;
-                        let accumulatedDelay = 0;
 
                         return (
                             <div
                                 key={index}
                                 ref={isActive ? activeLineRef : null}
                                 className={`VocalsGroup`}
-                                onClick={() => !('isGap' in line) && seek && seek(line.time * 1000)}
+                                onClick={() => seek && seek(line.time * 1000)}
                                 style={{
                                     textAlign: line.oppositeAligned ? 'right' : 'left',
                                     alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start',
                                     maxWidth: '70%',
-                                    width: 'fit-content'
+                                    width: 'fit-content',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.25rem'
                                 }}
                             >
                                 <span className={`Vocals ${isActive ? 'Active' : ''} ${isSung ? 'Sung' : ''}`}>
-                                    {words.map((word, wIndex) => {
-                                        const wordDuration = (word.length / totalChars) * lineDuration * 0.9;
-                                        const currentDelay = accumulatedDelay;
-                                        accumulatedDelay += wordDuration;
+                                    {line.words.map((word, wIndex) => {
+                                        const delay = Math.max(0, word.time - line.time);
+                                        const isWordSung = effectivePosition > (word.time + word.duration);
+                                        const isWordActive = effectivePosition >= word.time && effectivePosition < (word.time + word.duration);
+
+                                        const epicFactor = Math.min(1.5, word.duration / 0.5);
+                                        const epicScale = 1 + (0.08 * epicFactor);
+                                        const epicY = -0.15 * epicFactor;
+                                        const epicGlow = Math.min(20, 8 + (word.duration * 8));
+
+                                        const hasSyllables = word.syllables && word.syllables.length > 0;
 
                                         return (
                                             <span
@@ -415,27 +241,214 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                 style={{
                                                     display: 'inline-block',
                                                     marginRight: '0.3em',
-                                                    animationName: isActive ? 'karaokeFill' : 'none',
-                                                    animationDuration: `${wordDuration}s`,
-                                                    animationDelay: `${currentDelay}s`,
-                                                    animationFillMode: 'forwards',
-                                                    animationTimingFunction: 'linear',
-                                                    color: isSung ? 'white' : 'inherit',
-                                                    opacity: isSung ? 0.5 : 1,
-                                                    backgroundClip: 'text',
-                                                    WebkitBackgroundClip: 'text',
-                                                    backgroundImage: isActive
-                                                        ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.5) 50%)`
-                                                        : 'none',
-                                                    backgroundSize: '200% 100%',
-                                                    backgroundPosition: '100% 0',
+                                                    whiteSpace: 'nowrap'
                                                 }}
                                             >
-                                                {word}
+                                                {hasSyllables ? (
+                                                    word.syllables!.map((syl, sIndex) => {
+                                                        const sylDelay = Math.max(0, syl.time - line.time);
+                                                        const isSylSung = effectivePosition > (syl.time + syl.duration);
+                                                        const isSylActive = effectivePosition >= syl.time && effectivePosition < (syl.time + syl.duration);
+
+                                                        const sylEpicFactor = Math.min(1.5, syl.duration / 0.5);
+                                                        const sylEpicScale = 1 + (0.05 * sylEpicFactor);
+                                                        const sylEpicY = -0.1 * sylEpicFactor;
+
+                                                        return (
+                                                            <span
+                                                                key={sIndex}
+                                                                style={{
+                                                                    display: 'inline-block',
+                                                                    position: 'relative',
+                                                                    '--pop-scale': sylEpicScale,
+                                                                    '--pop-y': `${sylEpicY}em`,
+                                                                    // Pop animation on CONTAINER
+                                                                    animationName: isActive ? 'wordPop' : 'none',
+                                                                    animationDuration: `${syl.duration + 0.8}s`,
+                                                                    animationDelay: `${sylDelay}s`,
+                                                                    animationFillMode: 'none',
+                                                                    animationTimingFunction: 'ease-out',
+                                                                } as React.CSSProperties}
+                                                            >
+                                                                {/* Backing Layer (Grey/Inactive) */}
+                                                                <span style={{
+                                                                    color: isSylSung ? 'white' : 'rgba(255,255,255,0.5)',
+                                                                    opacity: isSylSung ? 1 : (isActive ? 1 : 0.5),
+                                                                    transition: 'color 0.3s, opacity 0.3s'
+                                                                }}>
+                                                                    {syl.text}
+                                                                </span>
+
+                                                                {/* Overlay Layer (Active White + Glow + Fill) */}
+                                                                {/* Only render if line is active to save resources, or always render and control opacity? */}
+                                                                {isActive && !isSylSung && (
+                                                                    <span style={{
+                                                                        position: 'absolute',
+                                                                        top: 0,
+                                                                        left: 0,
+                                                                        color: 'transparent',
+                                                                        backgroundClip: 'text',
+                                                                        WebkitBackgroundClip: 'text',
+                                                                        // Hard stop gradient: White then Transparent
+                                                                        backgroundImage: `linear-gradient(to right, white 50%, transparent 50%)`,
+                                                                        backgroundSize: '200% 100%',
+                                                                        // Fill animation
+                                                                        animationName: 'karaokeFill',
+                                                                        animationDuration: `${syl.duration}s`,
+                                                                        animationDelay: `${sylDelay}s`,
+                                                                        animationFillMode: 'forwards',
+                                                                        animationTimingFunction: 'linear',
+                                                                        // Apply Drop Shadow logic
+                                                                        filter: `drop-shadow(0 0 ${epicGlow}px white)`,
+                                                                        // Hide if not strictly active (though mapped by line active)
+                                                                        opacity: isSylActive ? 1 : 0
+                                                                    }}>
+                                                                        {syl.text}
+                                                                    </span>
+                                                                )}
+                                                                {/* Sung State Glow (simple text-shadow on container/backing? No, on backing) */}
+                                                                {isSylSung && (
+                                                                    <span style={{
+                                                                        position: 'absolute',
+                                                                        top: 0,
+                                                                        left: 0,
+                                                                        color: 'white',
+                                                                        textShadow: `0 0 ${epicGlow}px rgba(255, 255, 255, 0.6)`,
+                                                                        pointerEvents: 'none',
+                                                                        opacity: 1
+                                                                    }}>
+                                                                        {syl.text}
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                        );
+                                                    })
+                                                ) : (
+                                                    // Whole Word Fallback
+                                                    <span
+                                                        style={{
+                                                            display: 'inline-block',
+                                                            position: 'relative',
+                                                            '--pop-scale': epicScale,
+                                                            '--pop-y': `${epicY}em`,
+                                                            animationName: isActive ? 'wordPop' : 'none',
+                                                            animationDuration: `${word.duration + 0.8}s`,
+                                                            animationDelay: `${delay}s`,
+                                                            animationFillMode: 'none',
+                                                            animationTimingFunction: 'ease-out',
+                                                        } as React.CSSProperties}
+                                                    >
+                                                        {/* Backing */}
+                                                        <span style={{
+                                                            color: isWordSung ? 'white' : 'rgba(255,255,255,0.5)',
+                                                            opacity: isWordSung ? 1 : (isActive ? 1 : 0.5),
+                                                            transition: 'color 0.3s, opacity 0.3s'
+                                                        }}>
+                                                            {word.text}
+                                                        </span>
+
+                                                        {/* Overlay Active */}
+                                                        {isActive && !isWordSung && (
+                                                            <span style={{
+                                                                position: 'absolute',
+                                                                top: 0,
+                                                                left: 0,
+                                                                color: 'transparent',
+                                                                backgroundClip: 'text',
+                                                                WebkitBackgroundClip: 'text',
+                                                                backgroundImage: `linear-gradient(to right, white 50%, transparent 50%)`,
+                                                                backgroundSize: '200% 100%',
+                                                                animationName: 'karaokeFill',
+                                                                animationDuration: `${word.duration}s`,
+                                                                animationDelay: `${delay}s`,
+                                                                animationFillMode: 'forwards',
+                                                                animationTimingFunction: 'linear',
+                                                                filter: `drop-shadow(0 0 ${epicGlow}px white)`,
+                                                                opacity: isWordActive ? 1 : 0
+                                                            }}>
+                                                                {word.text}
+                                                            </span>
+                                                        )}
+                                                        {isWordSung && (
+                                                            <span style={{
+                                                                position: 'absolute',
+                                                                top: 0,
+                                                                left: 0,
+                                                                color: 'white',
+                                                                textShadow: `0 0 ${epicGlow}px rgba(255, 255, 255, 0.6)`,
+                                                                pointerEvents: 'none',
+                                                                opacity: 1
+                                                            }}>
+                                                                {word.text}
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                )}
                                             </span>
                                         );
                                     })}
                                 </span>
+
+                                {/* Background Vocals (Simplified for now, staying as is or updating?) */}
+                                {/* Keeping existing logic for BG vocals to minimize risk, they usually don't need the precise glow */}
+                                {line.backgroundLines && line.backgroundLines.map((bgLine, bgIndex) => {
+                                    const lastBgWord = bgLine.words?.[bgLine.words.length - 1];
+                                    const bgEndTime = lastBgWord ? (lastBgWord.time + lastBgWord.duration) : (bgLine.time + 3);
+
+                                    const bgIsActive = effectivePosition >= bgLine.time && effectivePosition < bgEndTime;
+                                    const bgIsSung = effectivePosition >= bgEndTime;
+
+                                    return (
+                                        <span
+                                            key={`bg-${bgIndex}`}
+                                            style={{
+                                                display: 'inline-block',
+                                                fontSize: '2.4rem',
+                                                fontWeight: 500,
+                                                opacity: bgIsActive ? 1 : (bgIsSung ? 0.7 : 0.5),
+                                                filter: bgIsActive ? 'blur(0)' : 'blur(0.5px)',
+                                                transform: bgIsActive ? 'scale(1.02)' : 'scale(0.98)',
+                                                transformOrigin: 'left center',
+                                                transition: 'opacity 0.5s ease, transform 0.5s ease, filter 0.4s ease',
+                                                alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start'
+                                            }}
+                                        >
+                                            {bgLine.words?.map((word, wIndex) => {
+                                                const wordDelay = Math.max(0, word.time - bgLine.time);
+                                                const wordSung = effectivePosition >= (word.time + word.duration);
+
+                                                return (
+                                                    <span
+                                                        key={wIndex}
+                                                        className="Word"
+                                                        style={{
+                                                            display: 'inline-block',
+                                                            marginRight: '0.3em',
+                                                            animationName: bgIsActive ? 'karaokeFill, wordPop' : 'none',
+                                                            animationDuration: `${word.duration}s, ${word.duration + 0.5}s`,
+                                                            animationDelay: `${wordDelay}s, ${wordDelay}s`,
+                                                            animationFillMode: 'forwards, none',
+                                                            animationTimingFunction: 'linear, ease-out',
+                                                            color: bgIsActive ? 'transparent' : (wordSung ? 'white' : 'rgba(255,255,255,0.5)'),
+                                                            opacity: wordSung ? 1 : (bgIsActive ? 1 : 0.5),
+                                                            backgroundClip: 'text',
+                                                            WebkitBackgroundClip: 'text',
+                                                            backgroundImage: bgIsActive
+                                                                ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.35) 50%)`
+                                                                : 'none',
+                                                            backgroundSize: '200% 100%',
+                                                            backgroundPosition: '100% 0',
+                                                            textShadow: wordSung ? '0 0 10px rgba(255,255,255,0.4)' : 'none',
+                                                            transition: 'text-shadow 0.4s ease'
+                                                        }}
+                                                    >
+                                                        {word.text}
+                                                    </span>
+                                                );
+                                            }) || bgLine.text}
+                                        </span>
+                                    );
+                                })}
                             </div>
                         );
                     })
