@@ -147,7 +147,6 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
 
                         // OPTIMIZATION: If line is not active, render simpler version
                         if (!isActive) {
-                            // Separate handling for Fallback (no words) vs Normal to show correct text
                             const displayWords = (line.words && line.words.length > 0)
                                 ? line.words.map(w => w.text)
                                 : line.text.split(' ');
@@ -191,7 +190,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                             )
                         }
 
-                        // ACTIVE LINE RENDER LOOP (Full Detail)
+                        // ACTIVE LINE RENDER LOOP
                         if (!line.words || line.words.length === 0) {
                             // Active Fallback (Simulated)
                             const words = line.text.split(' ');
@@ -268,7 +267,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                 <span className={`Vocals Active`}>
                                     {line.words.map((word, wIndex) => {
                                         const delay = Math.max(0, word.time - line.time);
-                                        // Inclusive check for sung state
+                                        // Inclusive check for sung state to prevent flicker
                                         const isWordSung = effectivePosition >= (word.time + word.duration);
                                         const isWordActive = effectivePosition >= word.time && effectivePosition < (word.time + word.duration);
 
@@ -318,13 +317,14 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                 <span style={{
                                                                     color: isSylSung ? 'white' : 'rgba(255,255,255,0.5)',
                                                                     opacity: isSylSung ? 1 : (isSylActive ? 1 : 0.5),
-                                                                    transition: 'color 0.1s' // Faster transition
+                                                                    transition: 'color 0.1s'
                                                                 }}>
                                                                     {syl.text}
                                                                 </span>
 
                                                                 {/* Overlay Layer (Heavy Effect) */}
-                                                                {isSylActive && !isSylSung && (
+                                                                {/* Render if Active OR Sung to allow fade out */}
+                                                                {(isSylActive || isSylSung) && (
                                                                     <span style={{
                                                                         position: 'absolute',
                                                                         top: 0,
@@ -332,28 +332,24 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                         color: 'transparent',
                                                                         backgroundClip: 'text',
                                                                         WebkitBackgroundClip: 'text',
-                                                                        backgroundImage: `linear-gradient(to right, white 50%, transparent 50%)`,
+                                                                        // If sung, full opacity white. If active, gradient.
+                                                                        backgroundImage: isSylSung
+                                                                            ? `linear-gradient(to right, white 100%, white 100%)`
+                                                                            : `linear-gradient(to right, white 50%, transparent 50%)`,
                                                                         backgroundSize: '200% 100%',
-                                                                        animationName: 'karaokeFill',
+
+                                                                        // Animation only when strictly active
+                                                                        animationName: isSylActive ? 'karaokeFill' : 'none',
                                                                         animationDuration: `${syl.duration}s`,
-                                                                        animationDelay: '0s', // MOUNTED WHEN ACTIVE, NO DELAY
+                                                                        animationDelay: '0s',
                                                                         animationFillMode: 'forwards',
                                                                         animationTimingFunction: 'linear',
+
                                                                         filter: `drop-shadow(0 0 ${epicGlow}px white)`,
-                                                                        willChange: 'background-position'
-                                                                    }}>
-                                                                        {syl.text}
-                                                                    </span>
-                                                                )}
-                                                                {isSylSung && (
-                                                                    <span style={{
-                                                                        position: 'absolute',
-                                                                        top: 0,
-                                                                        left: 0,
-                                                                        color: 'white',
-                                                                        textShadow: `0 0 ${epicGlow}px rgba(255, 255, 255, 0.6)`,
-                                                                        pointerEvents: 'none',
-                                                                        opacity: 1
+                                                                        // FADE OUT LOGIC: 0 opacity if sung, 1 if active
+                                                                        opacity: isSylActive ? 1 : 0,
+                                                                        transition: 'opacity 0.8s ease-out', // Slow fade out
+                                                                        willChange: 'opacity, background-position' // Optimize
                                                                     }}>
                                                                         {syl.text}
                                                                     </span>
@@ -384,7 +380,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                             {word.text}
                                                         </span>
 
-                                                        {isWordActive && !isWordSung && (
+                                                        {(isWordActive || isWordSung) && (
                                                             <span style={{
                                                                 position: 'absolute',
                                                                 top: 0,
@@ -392,29 +388,22 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                 color: 'transparent',
                                                                 backgroundClip: 'text',
                                                                 WebkitBackgroundClip: 'text',
-                                                                backgroundImage: `linear-gradient(to right, white 50%, transparent 50%)`,
+                                                                backgroundImage: isWordSung
+                                                                    ? `linear-gradient(to right, white 100%, white 100%)`
+                                                                    : `linear-gradient(to right, white 50%, transparent 50%)`,
                                                                 backgroundSize: '200% 100%',
-                                                                animationName: 'karaokeFill',
+
+                                                                animationName: isWordActive ? 'karaokeFill' : 'none',
                                                                 animationDuration: `${word.duration}s`,
-                                                                animationDelay: '0s', // MOUNTED WHEN ACTIVE, NO DELAY
+                                                                animationDelay: '0s',
                                                                 animationFillMode: 'forwards',
                                                                 animationTimingFunction: 'linear',
-                                                                filter: `drop-shadow(0 0 ${epicGlow}px white)`,
-                                                                willChange: 'background-position'
 
-                                                            }}>
-                                                                {word.text}
-                                                            </span>
-                                                        )}
-                                                        {isWordSung && (
-                                                            <span style={{
-                                                                position: 'absolute',
-                                                                top: 0,
-                                                                left: 0,
-                                                                color: 'white',
-                                                                textShadow: `0 0 ${epicGlow}px rgba(255, 255, 255, 0.6)`,
-                                                                pointerEvents: 'none',
-                                                                opacity: 1
+                                                                filter: `drop-shadow(0 0 ${epicGlow}px white)`,
+                                                                opacity: isWordActive ? 1 : 0,
+                                                                transition: 'opacity 0.8s ease-out',
+                                                                willChange: 'opacity, background-position'
+
                                                             }}>
                                                                 {word.text}
                                                             </span>
