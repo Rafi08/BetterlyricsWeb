@@ -216,6 +216,9 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                             const epicY = -0.15 * epicFactor; // Max -0.225em
                                             const epicGlow = Math.min(20, 8 + (word.duration * 8)); // 8-20px glow
 
+                                            // Syllable Logic: Use API syllables if available
+                                            const hasSyllables = word.syllables && word.syllables.length > 0;
+
                                             return (
                                                 <span
                                                     key={wIndex}
@@ -223,65 +226,102 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                     style={{
                                                         display: 'inline-block',
                                                         marginRight: '0.3em',
-
-                                                        // Pass dynamic values to CSS for epic pop
-                                                        '--pop-scale': epicScale,
-                                                        '--pop-y': `${epicY}em`,
-
-                                                        // Animation: Trigger on LINE active, with word delay
-                                                        animationName: isActive ? 'karaokeFill, wordPop' : 'none',
-                                                        animationDuration: `${word.duration}s, ${word.duration + 0.8}s`,
-                                                        animationDelay: `${delay}s, ${delay}s`,
-                                                        animationFillMode: 'forwards, none',
-                                                        animationTimingFunction: 'linear, ease-out',
-
-                                                        // Color Logic - transparent when line active so gradient shows
-                                                        color: isActive ? 'transparent' : (isWordSung ? 'white' : 'rgba(255,255,255,0.5)'),
-                                                        opacity: isWordSung ? 1 : (isActive ? 1 : 0.5),
-
-                                                        // Gradient/Fill styles - karaoke sweep left-to-right
-                                                        backgroundClip: 'text',
-                                                        WebkitBackgroundClip: 'text',
-                                                        // White on left half, dimmed on right half
-                                                        // Animation goes 100%→0%, revealing white from left to right
-                                                        backgroundImage: isActive
-                                                            ? `linear-gradient(to right, white 50%, rgba(255,255,255,0.35) 50%)`
-                                                            : 'none',
-                                                        backgroundSize: '200% 100%',
-                                                        backgroundPosition: '100% 0',
-
-                                                        // Epic glow on sung words - intensity based on duration
-                                                        textShadow: isWordSung
-                                                            ? `0 0 ${epicGlow}px rgba(255, 255, 255, 0.6)`
-                                                            : 'none',
-                                                        transition: 'text-shadow 0.5s ease'
-                                                    } as React.CSSProperties}
+                                                        whiteSpace: 'nowrap'
+                                                    }}
                                                 >
-                                                    {isLongWord && isWordActive ? chars!.map((char, cIndex) => {
-                                                        const charDuration = word.duration / chars!.length;
-                                                        const charDelay = cIndex * charDuration * 0.6;
-                                                        // Calculate if we're near end of word (last 30%)
-                                                        const wordProgress = (position / 1000 - word.time) / word.duration;
-                                                        const isNearEnd = wordProgress > 0.7;
+                                                    {hasSyllables ? (
+                                                        word.syllables!.map((syl, sIndex) => {
+                                                            const sylDelay = Math.max(0, syl.time - line.time);
+                                                            const isSylSung = effectivePosition > (syl.time + syl.duration);
 
-                                                        return (
-                                                            <span key={cIndex} style={{
+                                                            // Calculate syllable-level epic effect (scaled down)
+                                                            const sylEpicFactor = Math.min(1.5, syl.duration / 0.5);
+                                                            const sylEpicScale = 1 + (0.05 * sylEpicFactor);
+                                                            const sylEpicY = -0.1 * sylEpicFactor;
+
+                                                            return (
+                                                                <span
+                                                                    key={sIndex}
+                                                                    style={{
+                                                                        display: 'inline-block',
+                                                                        '--pop-scale': sylEpicScale,
+                                                                        '--pop-y': `${sylEpicY}em`,
+                                                                        animationName: isActive ? 'karaokeFill, wordPop' : 'none',
+                                                                        animationDuration: `${syl.duration}s, ${syl.duration + 0.8}s`,
+                                                                        animationDelay: `${sylDelay}s, ${sylDelay}s`,
+                                                                        animationFillMode: 'forwards, none',
+                                                                        animationTimingFunction: 'linear, ease-out',
+                                                                        color: isActive ? 'transparent' : (isSylSung ? 'white' : 'rgba(255,255,255,0.5)'),
+                                                                        opacity: isSylSung ? 1 : (isActive ? 1 : 0.5),
+                                                                        backgroundClip: 'text',
+                                                                        WebkitBackgroundClip: 'text',
+                                                                        backgroundImage: isActive
+                                                                            ? `linear-gradient(to right, white 50%, rgba(255,255,255,0.35) 50%)`
+                                                                            : 'none',
+                                                                        backgroundSize: '200% 100%',
+                                                                        backgroundPosition: '100% 0',
+                                                                        textShadow: isSylSung
+                                                                            ? `0 0 ${epicGlow}px rgba(255, 255, 255, 0.6)`
+                                                                            : 'none',
+                                                                        transition: 'text-shadow 0.5s ease'
+                                                                    } as React.CSSProperties}
+                                                                >
+                                                                    {syl.text}
+                                                                </span>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        // Fallback: Whole Word Animation (or Char split for long words)
+                                                        <span
+                                                            style={{
                                                                 display: 'inline-block',
-                                                                // Combine pop + shake at end
-                                                                animationName: isNearEnd ? 'wordPop, charShake' : 'wordPop',
-                                                                animationDuration: isNearEnd
-                                                                    ? `${charDuration + 0.4}s, 0.15s`
-                                                                    : `${charDuration + 0.4}s`,
-                                                                animationDelay: `${charDelay}s`,
-                                                                animationFillMode: 'none',
-                                                                animationTimingFunction: 'ease-out',
-                                                                animationIterationCount: isNearEnd ? '1, infinite' : '1',
-                                                                background: 'transparent'
-                                                            }}>
-                                                                {char}
-                                                            </span>
-                                                        )
-                                                    }) : word.text}
+                                                                '--pop-scale': epicScale,
+                                                                '--pop-y': `${epicY}em`,
+                                                                animationName: isActive ? 'karaokeFill, wordPop' : 'none',
+                                                                animationDuration: `${word.duration}s, ${word.duration + 0.8}s`,
+                                                                animationDelay: `${delay}s, ${delay}s`,
+                                                                animationFillMode: 'forwards, none',
+                                                                animationTimingFunction: 'linear, ease-out',
+                                                                color: isActive ? 'transparent' : (isWordSung ? 'white' : 'rgba(255,255,255,0.5)'),
+                                                                opacity: isWordSung ? 1 : (isActive ? 1 : 0.5),
+                                                                backgroundClip: 'text',
+                                                                WebkitBackgroundClip: 'text',
+                                                                backgroundImage: isActive
+                                                                    ? `linear-gradient(to right, white 50%, rgba(255,255,255,0.35) 50%)`
+                                                                    : 'none',
+                                                                backgroundSize: '200% 100%',
+                                                                backgroundPosition: '100% 0',
+                                                                textShadow: isWordSung
+                                                                    ? `0 0 ${epicGlow}px rgba(255, 255, 255, 0.6)`
+                                                                    : 'none',
+                                                                transition: 'text-shadow 0.5s ease'
+                                                            } as React.CSSProperties}
+                                                        >
+                                                            {isLongWord && isWordActive ? chars!.map((char, cIndex) => {
+                                                                const charDuration = word.duration / chars!.length;
+                                                                const charDelay = cIndex * charDuration * 0.6;
+                                                                const wordProgress = (position / 1000 - word.time) / word.duration;
+                                                                const isNearEnd = wordProgress > 0.7;
+
+                                                                return (
+                                                                    <span key={cIndex} style={{
+                                                                        display: 'inline-block',
+                                                                        animationName: isNearEnd ? 'wordPop, charShake' : 'wordPop',
+                                                                        animationDuration: isNearEnd
+                                                                            ? `${charDuration + 0.4}s, 0.15s`
+                                                                            : `${charDuration + 0.4}s`,
+                                                                        animationDelay: `${charDelay}s`,
+                                                                        animationFillMode: 'none',
+                                                                        animationTimingFunction: 'ease-out',
+                                                                        animationIterationCount: isNearEnd ? '1, infinite' : '1',
+                                                                        background: 'transparent'
+                                                                    }}>
+                                                                        {char}
+                                                                    </span>
+                                                                )
+                                                            }) : word.text}
+                                                        </span>
+                                                    )}
                                                 </span>
                                             );
                                         })}

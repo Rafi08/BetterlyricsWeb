@@ -2,6 +2,7 @@ export interface LyricWord {
     text: string;
     time: number; // Start time relative to track start (in seconds)
     duration: number; // Duration in seconds
+    syllables?: LyricWord[]; // Syllables that make up this word
 }
 
 export interface LyricLine {

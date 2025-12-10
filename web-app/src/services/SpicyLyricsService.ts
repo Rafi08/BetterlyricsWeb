@@ -96,6 +96,7 @@ export const SpicyLyricsService = {
                 let currentWordText = "";
                 let currentWordStart = -1;
                 let currentWordEnd = 0;
+                let currentWordSyllables: LyricWord[] = [];
 
                 // Group syllables into words
                 for (let i = 0; i < syllables.length; i++) {
@@ -106,15 +107,24 @@ export const SpicyLyricsService = {
                     currentWordText += syl.Text;
                     currentWordEnd = syl.EndTime;
 
+                    // Add syllable to current word's syllable list
+                    currentWordSyllables.push({
+                        text: syl.Text,
+                        time: syl.StartTime,
+                        duration: syl.EndTime - syl.StartTime
+                    });
+
                     // If not part of word (end of word) or last syllable
                     if (!syl.IsPartOfWord || i === syllables.length - 1) {
                         words.push({
                             text: currentWordText.trim(), // Remove trailing spaces from specific syllables if any
                             time: currentWordStart,
-                            duration: currentWordEnd - currentWordStart
+                            duration: currentWordEnd - currentWordStart,
+                            syllables: currentWordSyllables
                         });
                         currentWordText = "";
                         currentWordStart = -1;
+                        currentWordSyllables = [];
                     }
                 }
 
@@ -130,19 +140,29 @@ export const SpicyLyricsService = {
                         if (bg.Syllables && Array.isArray(bg.Syllables)) {
                             let curText = "";
                             let curStart = -1;
+                            let curSyllables: LyricWord[] = [];
 
                             for (let k = 0; k < bg.Syllables.length; k++) {
                                 const s = bg.Syllables[k];
                                 if (curStart === -1) curStart = s.StartTime;
                                 curText += s.Text;
+
+                                curSyllables.push({
+                                    text: s.Text,
+                                    time: s.StartTime,
+                                    duration: s.EndTime - s.StartTime
+                                });
+
                                 if (!s.IsPartOfWord || k === bg.Syllables.length - 1) {
                                     bgWords.push({
                                         text: curText.trim(),
                                         time: curStart,
-                                        duration: s.EndTime - curStart
+                                        duration: s.EndTime - curStart,
+                                        syllables: curSyllables
                                     });
                                     curText = "";
                                     curStart = -1;
+                                    curSyllables = [];
                                 }
                             }
                             bgText = bg.Syllables.map((s: SpicySyllable) => s.Text + (s.IsPartOfWord ? "" : " ")).join("").trim();
