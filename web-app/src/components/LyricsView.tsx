@@ -147,11 +147,107 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                         const isActive = effectivePosition >= lineStartTime && effectivePosition < lineEndTime;
                         const isSung = effectivePosition >= lineEndTime;
 
+                        // Render background vocals independently with their own timing
+                        const renderBackgroundVocals = () => {
+                            if (!line.backgroundLines) return null;
+
+                            return line.backgroundLines.map((bgLine, bgIndex) => {
+                                const lastBgWord = bgLine.words?.[bgLine.words.length - 1];
+                                const bgEndTime = lastBgWord ? (lastBgWord.time + lastBgWord.duration) : (bgLine.time + 3);
+
+                                const bgIsActive = effectivePosition >= bgLine.time && effectivePosition < bgEndTime;
+                                const bgIsSung = effectivePosition >= bgEndTime;
+
+                                // Render with words if available and active
+                                if (bgLine.words && bgLine.words.length > 0 && bgIsActive) {
+                                    return (
+                                        <span
+                                            key={`bg-${bgIndex}`}
+                                            style={{
+                                                display: 'inline-block',
+                                                fontSize: '2.4rem',
+                                                fontWeight: 500,
+                                                opacity: 1,
+                                                filter: 'blur(0)',
+                                                transform: 'scale(1.02)',
+                                                transformOrigin: 'left center',
+                                                transition: 'opacity 0.5s ease, transform 0.5s ease, filter 0.4s ease',
+                                                alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start'
+                                            }}
+                                        >
+                                            {bgLine.words.map((word, wIndex) => {
+                                                const wordDelay = Math.max(0, word.time - bgLine.time);
+                                                const wordSung = effectivePosition >= (word.time + word.duration);
+
+                                                // Ensure minimum animation duration for visibility
+                                                const minAnimDuration = 0.15;
+                                                const wordAnimDuration = Math.max(minAnimDuration, word.duration);
+
+                                                return (
+                                                    <span
+                                                        key={wIndex}
+                                                        className="Word"
+                                                        style={{
+                                                            display: 'inline-block',
+                                                            marginRight: '0.3em',
+                                                            animationName: 'karaokeFill, wordPop',
+                                                            animationDuration: `${wordAnimDuration}s, ${word.duration + 0.5}s`,
+                                                            animationDelay: `${wordDelay}s, ${wordDelay}s`,
+                                                            animationFillMode: 'forwards, none',
+                                                            animationTimingFunction: 'linear, ease-out',
+                                                            color: 'transparent',
+                                                            opacity: wordSung ? 1 : 1,
+                                                            backgroundClip: 'text',
+                                                            WebkitBackgroundClip: 'text',
+                                                            backgroundImage: `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.3) 50%)`,
+                                                            backgroundSize: '200% 100%',
+                                                            backgroundPosition: '100% 0',
+                                                            textShadow: wordSung ? '0 0 10px rgba(255,255,255,0.4)' : 'none',
+                                                            transition: 'text-shadow 0.4s ease'
+                                                        }}
+                                                    >
+                                                        {word.text}
+                                                    </span>
+                                                );
+                                            })}
+                                        </span>
+                                    );
+                                }
+
+                                // Simple rendering for non-active or text-only
+                                return (
+                                    <span
+                                        key={`bg-${bgIndex}`}
+                                        style={{
+                                            display: 'inline-block',
+                                            fontSize: '2.4rem',
+                                            opacity: bgIsSung ? 0.7 : 0.5,
+                                            marginLeft: '0',
+                                            fontWeight: 500,
+                                            filter: bgIsActive ? 'blur(0)' : 'blur(0.5px)',
+                                            transform: bgIsActive ? 'scale(1.02)' : 'scale(0.98)',
+                                            transformOrigin: 'left center',
+                                            alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start',
+                                            transition: 'opacity 0.5s ease, transform 0.5s ease, filter 0.4s ease'
+                                        }}>
+                                        {bgLine.text}
+                                    </span>
+                                );
+                            });
+                        };
+
                         // OPTIMIZATION: If line is not active, render simpler version
                         if (!isActive) {
                             const displayWords = (line.words && line.words.length > 0)
                                 ? line.words.map(w => w.text)
                                 : line.text.split(' ');
+
+                            // Check if any background vocals are still active
+                            const hasActiveBgVocals = line.backgroundLines?.some(bgLine => {
+                                const lastBgWord = bgLine.words?.[bgLine.words.length - 1];
+                                const bgEndTime = lastBgWord ? (lastBgWord.time + lastBgWord.duration) : (bgLine.time + 3);
+                                return effectivePosition >= bgLine.time && effectivePosition < bgEndTime;
+                            });
 
                             return (
                                 <div
@@ -164,7 +260,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                         alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start',
                                         maxWidth: '70%',
                                         width: 'fit-content',
-                                        opacity: isSung ? 0.5 : 1,
+                                        // Don't dim if background vocals are still active
+                                        opacity: (isSung && !hasActiveBgVocals) ? 0.5 : 1,
                                         display: 'flex',
                                         flexDirection: 'column',
                                         gap: '0.25rem'
@@ -186,22 +283,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                             </span>
                                         ))}
                                     </span>
-                                    {/* Render simplified BG vocals if present */}
-                                    {line.backgroundLines && line.backgroundLines.map((bgLine, bgIndex) => (
-                                        <span
-                                            key={`bg-${bgIndex}`}
-                                            style={{
-                                                display: 'inline-block',
-                                                fontSize: '2.4rem',
-                                                opacity: isSung ? 0.7 : 0.5,
-                                                marginLeft: '0',
-                                                fontWeight: 500,
-                                                alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start',
-                                                transition: 'opacity 0.5s ease'
-                                            }}>
-                                            {bgLine.text}
-                                        </span>
-                                    ))}
+                                    {/* Render background vocals independently */}
+                                    {renderBackgroundVocals()}
                                 </div>
                             )
                         }
@@ -437,69 +520,8 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                     })}
                                 </span>
 
-                                {/* Full Background Vocals for active line */}
-                                {line.backgroundLines && line.backgroundLines.map((bgLine, bgIndex) => {
-                                    const lastBgWord = bgLine.words?.[bgLine.words.length - 1];
-                                    const bgEndTime = lastBgWord ? (lastBgWord.time + lastBgWord.duration) : (bgLine.time + 3);
-
-                                    const bgIsActive = effectivePosition >= bgLine.time && effectivePosition < bgEndTime;
-                                    const bgIsSung = effectivePosition >= bgEndTime;
-
-                                    return (
-                                        <span
-                                            key={`bg-${bgIndex}`}
-                                            style={{
-                                                display: 'inline-block',
-                                                fontSize: '2.4rem',
-                                                fontWeight: 500,
-                                                opacity: bgIsActive ? 1 : (bgIsSung ? 0.7 : 0.5),
-                                                filter: bgIsActive ? 'blur(0)' : 'blur(0.5px)',
-                                                transform: bgIsActive ? 'scale(1.02)' : 'scale(0.98)',
-                                                transformOrigin: 'left center',
-                                                transition: 'opacity 0.5s ease, transform 0.5s ease, filter 0.4s ease',
-                                                alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start'
-                                            }}
-                                        >
-                                            {bgLine.words?.map((word, wIndex) => {
-                                                const wordDelay = Math.max(0, word.time - bgLine.time);
-                                                const wordSung = effectivePosition >= (word.time + word.duration);
-
-                                                // Ensure minimum animation duration for visibility
-                                                const minAnimDuration = 0.15;
-                                                const wordAnimDuration = Math.max(minAnimDuration, word.duration);
-
-                                                return (
-                                                    <span
-                                                        key={wIndex}
-                                                        className="Word"
-                                                        style={{
-                                                            display: 'inline-block',
-                                                            marginRight: '0.3em',
-                                                            animationName: bgIsActive ? 'karaokeFill, wordPop' : 'none',
-                                                            animationDuration: `${wordAnimDuration}s, ${word.duration + 0.5}s`,
-                                                            animationDelay: `${wordDelay}s, ${wordDelay}s`,
-                                                            animationFillMode: 'forwards, none',
-                                                            animationTimingFunction: 'linear, ease-out',
-                                                            color: bgIsActive ? 'transparent' : (wordSung ? 'white' : 'rgba(255,255,255,0.5)'),
-                                                            opacity: wordSung ? 1 : (bgIsActive ? 1 : 0.5),
-                                                            backgroundClip: 'text',
-                                                            WebkitBackgroundClip: 'text',
-                                                            backgroundImage: bgIsActive
-                                                                ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.3) 50%)`
-                                                                : 'none',
-                                                            backgroundSize: '200% 100%',
-                                                            backgroundPosition: '100% 0',
-                                                            textShadow: wordSung ? '0 0 10px rgba(255,255,255,0.4)' : 'none',
-                                                            transition: 'text-shadow 0.4s ease'
-                                                        }}
-                                                    >
-                                                        {word.text}
-                                                    </span>
-                                                );
-                                            }) || bgLine.text}
-                                        </span>
-                                    );
-                                })}
+                                {/* Render background vocals independently */}
+                                {renderBackgroundVocals()}
                             </div>
                         );
                     })
