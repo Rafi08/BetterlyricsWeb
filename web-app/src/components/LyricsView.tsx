@@ -485,7 +485,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                             backgroundClip: 'text',
                                                             WebkitBackgroundClip: 'text',
                                                             backgroundImage: bgIsActive
-                                                                ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.35) 50%)`
+                                                                ? `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.3) 50%)`
                                                                 : 'none',
                                                             backgroundSize: '200% 100%',
                                                             backgroundPosition: '100% 0',
