@@ -9,7 +9,7 @@ interface LyricsViewProps {
 }
 
 const SYNC_OFFSET = 0.5; // Seconds to compensate for "late" lyrics
-const GAP_THRESHOLD = 5; // Seconds to consider a gap "instrumental"
+const GAP_THRESHOLD = 3; // Seconds to consider a gap "instrumental"
 
 const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -123,7 +123,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                         color: 'transparent',
                                                         backgroundClip: 'text',
                                                         WebkitBackgroundClip: 'text',
-                                                        backgroundImage: `linear-gradient(to right, white 50%, rgba(255,255,255,0.3) 50%)`,
+                                                        backgroundImage: `linear-gradient(to right, white 50%, rgba(255, 255, 255, 0.36) 50%)`,
                                                         backgroundSize: '200% 100%',
                                                         backgroundPosition: '100% 0'
                                                     } as React.CSSProperties}
@@ -193,10 +193,11 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                             style={{
                                                 display: 'inline-block',
                                                 fontSize: '2.4rem',
-                                                opacity: 0.5,
+                                                opacity: isSung ? 0.7 : 0.5,
                                                 marginLeft: '0',
                                                 fontWeight: 500,
-                                                alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start'
+                                                alignSelf: line.oppositeAligned ? 'flex-end' : 'flex-start',
+                                                transition: 'opacity 0.5s ease'
                                             }}>
                                             {bgLine.text}
                                         </span>
@@ -312,6 +313,10 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                         const sylEpicScale = 1 + (0.05 * sylEpicFactor);
                                                         const sylEpicY = -0.1 * sylEpicFactor;
 
+                                                        // Ensure minimum animation duration for visibility
+                                                        const minAnimDuration = 0.15;
+                                                        const sylAnimDuration = Math.max(minAnimDuration, syl.duration);
+
                                                         return (
                                                             <span
                                                                 key={sIndex}
@@ -351,7 +356,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                                         backgroundSize: '200% 100%',
 
                                                                         animationName: isSylActive ? 'karaokeFill' : 'none',
-                                                                        animationDuration: `${syl.duration}s`,
+                                                                        animationDuration: `${sylAnimDuration}s`,
                                                                         animationDelay: '0s',
                                                                         animationFillMode: 'forwards',
                                                                         animationTimingFunction: 'linear',
@@ -391,34 +396,40 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                             {word.text}
                                                         </span>
 
-                                                        {(isWordActive || isWordSung) && (
-                                                            <span style={{
-                                                                position: 'absolute',
-                                                                top: 0,
-                                                                left: 0,
-                                                                color: 'transparent',
-                                                                backgroundClip: 'text',
-                                                                WebkitBackgroundClip: 'text',
-                                                                backgroundImage: isWordSung
-                                                                    ? `linear-gradient(to right, white 100%, white 100%)`
-                                                                    : `linear-gradient(to right, white 50%, transparent 50%)`,
-                                                                backgroundSize: '200% 100%',
+                                                        {(() => {
+                                                            // Ensure minimum animation duration for visibility
+                                                            const minAnimDuration = 0.15;
+                                                            const wordAnimDuration = Math.max(minAnimDuration, word.duration);
 
-                                                                animationName: isWordActive ? 'karaokeFill' : 'none',
-                                                                animationDuration: `${word.duration}s`,
-                                                                animationDelay: '0s',
-                                                                animationFillMode: 'forwards',
-                                                                animationTimingFunction: 'linear',
+                                                            return (isWordActive || isWordSung) && (
+                                                                <span style={{
+                                                                    position: 'absolute',
+                                                                    top: 0,
+                                                                    left: 0,
+                                                                    color: 'transparent',
+                                                                    backgroundClip: 'text',
+                                                                    WebkitBackgroundClip: 'text',
+                                                                    backgroundImage: isWordSung
+                                                                        ? `linear-gradient(to right, white 100%, white 100%)`
+                                                                        : `linear-gradient(to right, white 50%, transparent 50%)`,
+                                                                    backgroundSize: '200% 100%',
 
-                                                                filter: `drop-shadow(0 0 ${epicGlow}px white)`,
-                                                                opacity: isWordActive ? 1 : 0,
-                                                                transition: 'opacity 2s ease-out',
-                                                                willChange: 'opacity, background-position'
+                                                                    animationName: isWordActive ? 'karaokeFill' : 'none',
+                                                                    animationDuration: `${wordAnimDuration}s`,
+                                                                    animationDelay: '0s',
+                                                                    animationFillMode: 'forwards',
+                                                                    animationTimingFunction: 'linear',
 
-                                                            }}>
-                                                                {word.text}
-                                                            </span>
-                                                        )}
+                                                                    filter: `drop-shadow(0 0 ${epicGlow}px white)`,
+                                                                    opacity: isWordActive ? 1 : 0,
+                                                                    transition: 'opacity 2s ease-out',
+                                                                    willChange: 'opacity, background-position'
+
+                                                                }}>
+                                                                    {word.text}
+                                                                </span>
+                                                            );
+                                                        })()}
                                                     </span>
                                                 )}
                                             </span>
@@ -453,6 +464,10 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                 const wordDelay = Math.max(0, word.time - bgLine.time);
                                                 const wordSung = effectivePosition >= (word.time + word.duration);
 
+                                                // Ensure minimum animation duration for visibility
+                                                const minAnimDuration = 0.15;
+                                                const wordAnimDuration = Math.max(minAnimDuration, word.duration);
+
                                                 return (
                                                     <span
                                                         key={wIndex}
@@ -461,7 +476,7 @@ const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
                                                             display: 'inline-block',
                                                             marginRight: '0.3em',
                                                             animationName: bgIsActive ? 'karaokeFill, wordPop' : 'none',
-                                                            animationDuration: `${word.duration}s, ${word.duration + 0.5}s`,
+                                                            animationDuration: `${wordAnimDuration}s, ${word.duration + 0.5}s`,
                                                             animationDelay: `${wordDelay}s, ${wordDelay}s`,
                                                             animationFillMode: 'forwards, none',
                                                             animationTimingFunction: 'linear, ease-out',

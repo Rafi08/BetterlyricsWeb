@@ -33,7 +33,7 @@ const Content = () => {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
         <h1>Beautiful Lyrics Web</h1>
-        <small style={{ marginBottom: '2rem', opacity: 0.7 }}>v3.1 (TV Support)</small>
+        <small style={{ marginBottom: '2rem', opacity: 0.7 }}>v3.5 (animation fix)</small>
         <button onClick={login} style={{ padding: '1rem 2rem', fontSize: '1.2rem', cursor: 'pointer' }}>
           Login with Spotify
         </button>
@@ -54,7 +54,7 @@ const Content = () => {
       {!isActive ? (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
           <h2>Ready to play!</h2>
-          <small style={{ marginBottom: '1rem', opacity: 0.7 }}>v3.4 (Scroll Fix + Slower Fade)</small>
+          <small style={{ marginBottom: '1rem', opacity: 0.7 }}>v3.5 (animation fix)</small>
           <p>Open Spotify and connect to <strong>Beautiful Lyrics Web</strong></p>
           <small>Device ID: {deviceId}</small>
         </div>
