@@ -8,8 +8,8 @@ interface LyricsViewProps {
     seek: (pos: number) => void;
 }
 
-const SYNC_OFFSET = 0.5; // Seconds to compensate for "late" lyrics
-const GAP_THRESHOLD = 3; // Seconds to consider a gap "instrumental"
+const SYNC_OFFSET = 0.4; // Seconds to compensate for "late" lyrics
+const GAP_THRESHOLD = 5; // Seconds to consider a gap "instrumental"
 
 const LyricsView: React.FC<LyricsViewProps> = ({ lyrics, position, seek }) => {
     const containerRef = useRef<HTMLDivElement>(null);
