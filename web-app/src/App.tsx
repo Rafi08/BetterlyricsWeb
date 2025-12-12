@@ -42,14 +42,11 @@ const Content = () => {
   }
 
   return (
-    <>
-      <div style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 1000 }}>
-        {/* Controls Overlay */}
-        {currentTrack && <div style={{ background: 'rgba(0,0,0,0.5)', padding: '0.5rem', borderRadius: '8px', color: 'white' }}>
-          <small>Waiting...</small>
-          <button onClick={logout} style={{ marginLeft: '1rem' }}>Logout</button>
-        </div>}
-      </div>
+    <div style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 1000 }}>
+      {!currentTrack && <div style={{ background: 'rgba(0,0,0,0.5)', padding: '0.5rem', borderRadius: '8px', color: 'white' }}>
+        <small>Waiting...</small>
+        <button onClick={logout} style={{ marginLeft: '1rem' }}>Logout</button>
+      </div>}
 
       {!isActive ? (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
@@ -73,7 +70,7 @@ const Content = () => {
           </div>
         </>
       )}
-    </>
+    </div>
   );
 };
 
